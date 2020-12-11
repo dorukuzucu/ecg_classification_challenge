@@ -57,3 +57,7 @@ venv.bak/
 *.zip
 *.gz
 *.tar
+.hea
+.mat
+*/raw/*
+*/processed/*
