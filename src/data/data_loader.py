@@ -13,9 +13,7 @@ class ECGParquetDataloader:
         batch_size: given when creating dataloader. this param handles batchsize for training
         num_epochs: given when creating dataloader. this param handles number of epochs for training
        """
-    def __init__(self,path,num_epochs,batch_size):
-        self.batch_size = batch_size
-        self.epochs = num_epochs
+    def __init__(self,path):
         self.dataset_path = path
 
     # transformation to be used for data. Needs to be handled according to data(if possible)
@@ -28,10 +26,10 @@ class ECGParquetDataloader:
         return TransformSpec(self._row_to_tensor)
 
     # get data loader
-    def new_loader(self):
+    def new_loader(self, num_epochs,batch_size):
         with DataLoader(make_batch_reader(self.dataset_path,
-                                          num_epochs=self.epochs
+                                          num_epochs=num_epochs
                                           #,transform_spec=self._transform_spec_tensor()
-                                          ),batch_size=self.batch_size) as train_loader:
+                                          ),batch_size=batch_size) as train_loader:
             return train_loader
 
