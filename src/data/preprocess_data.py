@@ -82,8 +82,9 @@ for i in range(num_files):
 features = np.array(features)
 labels = np.array(labels)
 
-# write features
-fields = [
+# features
+# since number of feautes has not been determined we create them statically
+fields_features = [
     ('age', pa.float32()),
     ('sex', pa.float32()),
     ('mean_RR', pa.float32()),
@@ -99,9 +100,7 @@ fields = [
     ('kurt_RR', pa.float32()),
     ('kurt_Peaks', pa.float32()),
 ]
-schema_feature = pa.schema(fields)
-table_feature = pa.Table.from_arrays(
-    [
+table_features_arrays = [
     pa.array(features[:, 0]), 
     pa.array(features[:, 1]), 
     pa.array(features[:, 2]), 
@@ -116,36 +115,27 @@ table_feature = pa.Table.from_arrays(
     pa.array(features[:, 11]), 
     pa.array(features[:, 12]), 
     pa.array(features[:, 13]),
-    ], 
-    schema=schema_feature,
-    )
-
-# write labels
-fields_labels = [
-    ('label_1', pa.int8()),
-    ('label_2', pa.int8()),
-    ('label_3', pa.int8()),
-    ('label_4', pa.int8()),
-    ('label_5', pa.int8()),
-    ('label_6', pa.int8()),
-
 ]
-schema_labels = pa.schema(fields_labels)
-table_labels = pa.Table.from_arrays(
-    [
-    pa.array(labels[:, 0]), 
-    pa.array(labels[:, 1]), 
-    pa.array(labels[:, 2]), 
-    pa.array(labels[:, 3]), 
-    pa.array(labels[:, 4]), 
-    pa.array(labels[:, 5]), 
-    ], 
-    schema=schema_labels,
+
+# labels
+# with loop we get label fields and values dynamically
+fields_labels = []
+table_labels_arrays = []
+for l in range(num_classes):
+    fields_labels += (f'label_{l+1}', pa.int8()),
+    table_labels_arrays += pa.array(labels[:, l]),
+
+# concat features and labels
+fields = fields_features + fields_labels
+table_arrays = table_features_arrays + table_labels_arrays
+
+# create parquet objects
+schema = pa.schema(fields)
+table = pa.Table.from_arrays(
+    table_arrays,
+    schema=schema,
     )
 
-
-output_path_feature = os.path.join(output_directory, "preprocess.parquet")
-pq.write_table(table_feature, where=output_path_feature)
-
-output_path_labels = os.path.join(output_directory, "labels.parquet")
-pq.write_table(table_labels, where=output_path_labels)
+# write concated data to parquet
+output_path_labels = os.path.join(output_directory, "processed.parquet")
+pq.write_table(table, where=output_path_labels)
