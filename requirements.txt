@@ -1,1 +1,8 @@
 scipy==1.5.4
+torchvision==0.8.1
+pytorch==1.7.0
+cudatoolkit==10.2.89
+pyspark==3.0.1
+pyarrow==2.0.0
+petastorm==0.9.7
+parquet-cpp==1.5.1

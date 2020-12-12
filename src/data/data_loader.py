@@ -27,9 +27,5 @@ class ECGParquetDataloader:
 
     # get data loader
     def new_loader(self, num_epochs,batch_size):
-        with DataLoader(make_batch_reader(self.dataset_path,
-                                          num_epochs=num_epochs
-                                          #,transform_spec=self._transform_spec_tensor()
-                                          ),batch_size=batch_size) as train_loader:
-            return train_loader
+        return DataLoader(make_batch_reader(self.dataset_path,num_epochs=num_epochs),batch_size=batch_size)
 

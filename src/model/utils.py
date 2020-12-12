@@ -1,6 +1,8 @@
 from itertools import product
 from collections import OrderedDict
 from collections import namedtuple
+import numpy as np
+import torch
 
 
 def create_dict_combination(dict):
@@ -18,3 +20,8 @@ def create_dict_combination(dict):
 
     # return value
     return run_configs
+
+def dict_to_torch(dict, feature_count, batch_size):
+    features = [value.tolist() for value in list(dict.values())[:feature_count]]
+    labels = [value.tolist() for value in list(dict.values())[feature_count:]]
+    return torch.from_numpy(np.array(features).T), torch.from_numpy(np.array(labels).T)
