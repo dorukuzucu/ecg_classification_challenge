@@ -1,5 +1,12 @@
+import torch
+from petastorm import make_batch_reader
+from petastorm.pytorch import DataLoader
+
 from src.model.utils import create_dict_combination
 from src.data.data_loader import ECGParquetDataloader
+import pandas as pd
+import numpy as np
+
 class TrainManager:
     def __init__(self,model,dataloader: ECGParquetDataloader, training_config):
         self.model = model
@@ -10,15 +17,16 @@ class TrainManager:
 
     def train(self):
         for run in self.runs:
-            new_dataset = self.dataloader.new_loader(run.epochs, run.batch_size)
-            # TODO parse dataset and feed to network
-            pass
+            for epoch in range(run.epochs):
+                new_dataset_loader = self.dataloader.new_loader(num_epochs=1, batch_size=run.batch_size)
+                for idx, batch_data in enumerate(new_dataset_loader):
+
+
+                    pass
 
 
     def __generate_combination_of_params(self):
         self.runs = create_dict_combination(self.config)
-
-
 
 
 
