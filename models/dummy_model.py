@@ -12,7 +12,6 @@ class TestNet(nn.Module):
         self.fc4 = nn.Linear(in_features=100, out_features=100)
         self.fc5 = nn.Linear(in_features=100, out_features=55)
         self.out = nn.Linear(in_features=55, out_features=9)
-        self.sigmoid = nn.Sigmoid()
         self.loss_weights = torch.full((1,9),1)
 
     def forward(self,x):
@@ -25,5 +24,4 @@ class TestNet(nn.Module):
         x = self.fc4(x)
         x = self.fc5(x)
         x = self.out(x)
-        x = self.sigmoid(x)
         return x
