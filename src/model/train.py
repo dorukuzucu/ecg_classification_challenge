@@ -64,9 +64,9 @@ loader = ECGParquetDataloader(data_path)
 dummy_params = {
     'learning_rate':[0.01],
     'batch_size':[3],
-    'epochs':[10],
+    'epochs':[100],
     'num_workers':[0],
-    'optimizer': "Adam"
+    'optimizer': ["Adam"]
 }
 
 mngr = TrainManager(model=dummy_model, data_loader=loader, training_config=dummy_params)
