@@ -31,21 +31,3 @@ class TrainManager:
 
 
 
-
-with DataLoader(make_batch_reader(
-        r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed',
-        num_epochs=1
-        #,transform_spec=trn
-        ),
-                batch_size=3) as train_loader:
-
-
-    print()
-    count = 0
-    for idx,row in enumerate(train_loader):
-        print(row)
-        count+=1
-
-
-    print(count)
-
