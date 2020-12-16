@@ -60,4 +60,4 @@ venv.bak/
 .hea
 .mat
 */raw/*
-
+!*/raw/dx_mapping_scored.csv

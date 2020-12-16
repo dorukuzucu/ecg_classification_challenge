@@ -5,6 +5,7 @@ import tarfile
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.csv as pcsv
 import pyarrow.parquet as pq
 from scipy import io
 
@@ -12,15 +13,20 @@ from get_12ECG_features import get_12ECG_features
 
 
 # Find unique classes.
-def get_classes(input_directory, filenames):
-    classes = set()
-    for filename in filenames:
-        with open(filename, 'r') as f:
-            for l in f:
-                if l.startswith('#Dx'):
-                    tmp = l.split(': ')[1].split(',')
-                    for c in tmp:
-                        classes.add(c.strip())
+def get_classes(input_directory, filenames, static=True):
+    if static:
+        class_path = os.path.join(Path(input_directory).parents[1], "dx_mapping_scored.csv")
+        class_matrix = pcsv.read_csv(class_path).to_pandas()
+        classes = class_matrix["SNOMED CT Code"]
+    else:
+        classes = set()
+        for filename in filenames:
+            with open(filename, 'r') as f:
+                for l in f:
+                    if l.startswith('#Dx'):
+                        tmp = l.split(': ')[1].split(',')
+                        for c in tmp:
+                            classes.add(c.strip())
     return sorted(classes)
 
 
@@ -79,16 +85,26 @@ for folder in folders:
 
             for l in header:
                 if l.startswith('#Dx:'):
-                    labels_act = np.zeros(num_classes)
+                    labels_act = np.zeros(num_classes+1)
                     arrs = l.strip().split(' ')
                     for arr in arrs[1].split(','):
-                        class_index = classes.index(arr.rstrip()) # Only use first positive index
-                        labels_act[class_index] = 1
+                        # if label not in our labels
+                        if arr.strip() not in classes:
+                            labels_act[-1] = 1
+                        else:
+                            class_index = classes.index(arr.rstrip()) # Only use first positive index
+                            labels_act[class_index] = 1
             labels.append(labels_act)
 
         # "age", "sex", "mean_RR", "mean_Peaks", "median_RR", "median_Peaks", "std_RR", "std_Peaks", "var_RR", "var_Peaks", "skew_RR", "skew_Peaks", "kurt_RR", "kurt_Peaks"
         features = np.array(features)
         labels = np.array(labels)
+
+        # filter labels which not in our labels
+        other_class_mask = labels[:,-1] != 1
+        features = features[other_class_mask]
+        labels = labels[other_class_mask]
+
 
         # features
         # since number of feautes has not been determined we create them statically
