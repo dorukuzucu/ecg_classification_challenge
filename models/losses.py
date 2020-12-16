@@ -1,4 +1,4 @@
-"""
+
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -6,84 +6,127 @@ from torch.nn import BCEWithLogitsLoss
 
 from src.data.data_loader import ECGParquetDataloader
 from src.model.utils import dict_to_torch
-"""
 import numpy as np
 import pandas as pd
 
-def load_penalty_csv():
-    w = pd.read_csv("weights.csv")
+"""
+Method that will be used to load weights as a penalty matrix 
+"""
+def load_penalty_csv(path):
+    w = pd.read_csv(path)
     np_w = w.to_numpy()
     labels = np_w[:,0]
     weights = np_w[:,1:]
-    return torch.from_numpy(weights)#, torch.from_numpy(labels)
+    return 1/torch.from_numpy(weights)#, torch.from_numpy(labels)
 
-class SmoothDiceLoss(nn.Module):
+
+class SoftDiceLoss(nn.Module):
+    """
+    We will try to use dice loss, which is mostly used in semantic segmentation
+    """
     def __init__(self, epsilon=1e-12):
         super().__init__()
         self.epsilon = epsilon
 
     def forward(self, predicted, target):
-        batches = target.size(0)
-        flat_predicted = predicted.view(batches, -1)
-        flat_target = target.view(batches, -1)
+        """
+        :param predicted: predictions as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :param target: labels as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :return: Dice Loss:
+            numerator is intersection of predicted and target
+            denominator is sum of predicted and target
+            loss = 1 - 2 * numerator / denominator
+        """
+        # check shapes
+        assert predicted.size() == target.size()
 
-        numerator = (flat_predicted * flat_target).sum(1) + self.epsilon
-        denominator = flat_predicted.sum(1) + flat_target.sum(1) + self.epsilon
+        # calculate numerator and denominator of dice loss
+        numerator = (predicted * target).sum(1) + self.epsilon
+        denominator = predicted.sum(1) + target.sum(1) + self.epsilon
 
-        loss = 1 - 2 * numerator / denominator / batches
-        return loss.sum()
+        # calculate and return loss
+        loss = 1 - 2 * numerator / denominator
+        return loss.mean()
 
-
-class DiceLossWithPenalty(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, predicted, target):
-        num_classes = target.size(-1)
-        loss = 0
-        smooth_dice_loss = SmoothDiceLoss()
-        for class_no in range(num_classes):
-            loss += smooth_dice_loss(predicted[:, class_no], target[:, class_no])
-        return loss
 
 class L1LossWithPenalty(nn.L1Loss):
     """
-    This method takes 2 parameters and calculates a loss based on penalty weights.
-    Penalty weights are decided by physionet.
-    We will utilize these weights in our loss function
+    L1LossWithPenalty class takes a matrix path as a loss and calculates a loss based on penalty weights.
+    Penalty weights are decided by physionet. We will utilize these weights in our loss function
+    Since model can predict more than 1 classes, these cases will be taken into consideration.
+    When there is only 1 predicted class and 1 label:
+        penalty matrix's corresponding value will be taken into consideration
+    Otherwise:
+        maximum value of matrix will be used as penalty
+    Penalty value will be multiplied by L1 Distance of each input's prediction and labels
     """
-    def __init__(self):
-        self.penalty_weights = load_penalty_csv()
+    def __init__(self,weight_path):
+        super().__init__()
+        self.penalty_weights = load_penalty_csv(weight_path)
 
-    def forward(self,predicted,labels):
-        pass
+    def forward(self, predicted, target):
+        """
+        :param predicted: predictions as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :param target: labels as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :return: L1 loss penalized depending on class predictions
+        """
+        # check shapes
+        assert predicted.size() == target.size()
+        # calculate loss
+        loss = 0
+        for batch in range(predicted.size(0)):
+            raw_l1_loss = torch.abs(predicted[batch] - target[batch]).sum()
+            if(predicted[batch].sum()==1 and target[batch].sum == 1):
+                pred_cls = (predicted[batch] == 1).nonzero().item()
+                label_cls = (target[batch] == 1).nonzero().item()
+                loss+=raw_l1_loss * self.penalty_weights[pred_cls,label_cls]
+            else:
+                loss+=raw_l1_loss * self.penalty_weights.max()
+        return loss
 
 class MSELossWithPenalty(nn.MSELoss):
-    pass
+    """
+        MSELossWithPenalty class takes a matrix path as a loss and calculates a loss based on penalty weights.
+        Penalty weights are decided by physionet. We will utilize these weights in our loss function
+        Since model can predict more than 1 classes, these cases will be taken into consideration.
+        When there is only 1 predicted class and 1 label:
+            penalty matrix's corresponding value will be taken into consideration
+        Otherwise:
+            maximum value of matrix will be used as penalty
+        Penalty value will be multiplied by MSE between each input's prediction and labels
+        """
+    def __init__(self,weight_path):
+        super().__init__()
+        self.penalty_weights = load_penalty_csv(weight_path)
 
-"""
-import pandas as pd
-
-w = pd.read_csv("weights.csv")
-np_w = w.to_numpy()
-
-print(np_w[:, 1:].shape)
-"""
-class L1Loss(nn.Module)
-
-b_pred = torch.from_numpy(np.array([[1, 0, 0, 0, 1], [1, 0, 0, 0, 1]])).float()
-b_lab = torch.from_numpy(np.array([[1, 0, 0, 0, 1], [0, 0, 0, 1, 0]])).float()
-pred = torch.from_numpy(np.array([0, 0, 0, 1, 0])).view(1, -1).float()
-lab = torch.from_numpy(np.array([0, 0, 0, 1, 0])).view(1, -1).float()
-
-sdl = SmoothDiceLoss()
-dll = DiceLossWithLogits()
-
-print("single loss=", sdl.forward(b_pred, b_lab))
-print("multiclass loss=", dll.forward(b_pred, b_lab))
-
-loss = torch.nn.L1Loss()
-loss2 = torch.nn.MSELoss()
-print("L1_Loss", loss(b_pred, b_lab))
-print("MSE", loss(b_pred, b_lab))
-"""
+    def forward(self, predicted, target):
+        """
+        :param predicted: predictions as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :param target: labels as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :return: MSE Loss penalized depending on class predictions
+        """
+        # check shapes
+        assert predicted.size() == target.size()
+        # calculate loss
+        loss = 0
+        for batch in range(predicted.size(0)):
+            raw_mse_loss = torch.square(torch.abs(predicted[batch] - target[batch])).mean()
+            if(predicted[batch].sum()==1 and target[batch].sum == 1):
+                pred_cls = (predicted[batch] == 1).nonzero().item()
+                label_cls = (target[batch] == 1).nonzero().item()
+                loss+=raw_mse_loss * self.penalty_weights[pred_cls,label_cls]
+            else:
+                loss+=raw_mse_loss * self.penalty_weights.max()
+        return loss
