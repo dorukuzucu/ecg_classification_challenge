@@ -24,4 +24,4 @@ def create_dict_combination(dict):
 def dict_to_torch(dict, feature_count, batch_size):
     features = [value.tolist() for value in list(dict.values())[:feature_count]]
     labels = [value.tolist() for value in list(dict.values())[feature_count:]]
-    return torch.from_numpy(np.array(features).T), torch.from_numpy(np.array(labels).T)
+    return torch.from_numpy(np.array(features).T), torch.from_numpy(np.array(labels).T).float()
