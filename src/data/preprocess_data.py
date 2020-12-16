@@ -17,7 +17,8 @@ def get_classes(input_directory, filenames, static=True):
     if static:
         class_path = os.path.join(Path(input_directory).parents[1], "dx_mapping_scored.csv")
         class_matrix = pcsv.read_csv(class_path).to_pandas()
-        classes = class_matrix["SNOMED CT Code"]
+        classes = class_matrix["SNOMED CT Code"].astype(str)
+        return list(set(classes))
     else:
         classes = set()
         for filename in filenames:
@@ -27,7 +28,7 @@ def get_classes(input_directory, filenames, static=True):
                         tmp = l.split(': ')[1].split(',')
                         for c in tmp:
                             classes.add(c.strip())
-    return sorted(classes)
+        return sorted(classes)
 
 
 # Load challenge data.
@@ -75,6 +76,7 @@ for folder in folders:
 
         features = list()
         labels = list()
+        arr_list = []
 
         for i in range(num_files):
             recording = recordings[i]
@@ -89,7 +91,8 @@ for folder in folders:
                     arrs = l.strip().split(' ')
                     for arr in arrs[1].split(','):
                         # if label not in our labels
-                        if arr.strip() not in classes:
+                        arr_list.append(arr)
+                        if arr.rstrip() not in classes:
                             labels_act[-1] = 1
                         else:
                             class_index = classes.index(arr.rstrip()) # Only use first positive index
@@ -101,10 +104,10 @@ for folder in folders:
         labels = np.array(labels)
 
         # filter labels which not in our labels
-        other_class_mask = labels[:,-1] != 1
+        labels = labels[:, :num_classes]
+        other_class_mask = labels.sum(axis=1) != 0
         features = features[other_class_mask]
         labels = labels[other_class_mask]
-
 
         # features
         # since number of feautes has not been determined we create them statically
