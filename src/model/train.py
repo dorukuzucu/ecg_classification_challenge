@@ -4,7 +4,7 @@ from models.dummy_model import TestNet
 from src.data.data_loader import ECGParquetDataloader
 import torch.nn as nn
 import torch.optim as optim
-
+import os
 
 # TODO set a method for epoch train
 # TODO begin_run, begin_epoch methods
@@ -13,8 +13,8 @@ import torch.optim as optim
 class TrainManager:
     def __init__(self, model, processed_data_path, training_config):
         self.model = model
-        self.val_loader = ECGParquetDataloader(processed_data_path + "/val")
-        self.train_loader = ECGParquetDataloader(processed_data_path + "/train")
+        self.val_loader = ECGParquetDataloader(os.path.join(processed_data_path, "validation"))
+        self.train_loader = ECGParquetDataloader(os.path.join(processed_data_path, "train"))
         self.runs = create_dict_combination(training_config)
         self.dataset = None
         self.optimizer = None
@@ -100,7 +100,7 @@ class TrainManager:
 
 dummy_model = TestNet()
 data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
-data_path_1 = r'file:C:/Users/ABRA/Desktop/Ders/Yüksek Lisans/BLG561-Deep Learning/deep_learning_interim_project/data/processed'
+
 
 dummy_params = {
     'learning_rate': [0.01],
@@ -108,11 +108,11 @@ dummy_params = {
     'epochs': [100],
     'num_workers': [0],
     'optimizer_type': ["Adam"],
-    'loss_fn': ["Test"],
+    'loss_fn': ["penalty_l1"],
     'epochs_for_val': [4],
     'weight_decay': [1e-4],
     'momentum': [0]
 }
 
-mngr = TrainManager(model=dummy_model, processed_data_path=data_path_1, training_config=dummy_params)
+mngr = TrainManager(model=dummy_model, processed_data_path=data_path, training_config=dummy_params)
 mngr.train()

@@ -82,8 +82,8 @@ class SoftDiceLossWithPenalty(SoftDiceLoss):
             # get raw dice loss
             raw_dice_loss = self.soft_dice_loss.forward(predicted[batch], target[batch])
             # get predicted class and target classes
-            pred_cls = (predicted[batch] == 1).nonzero().item()
-            label_cls = (target[batch] == 1).nonzero().item()
+            pred_cls = torch.argmax(predicted[batch]).item()
+            label_cls = torch.argmax(target[batch]).item()
             # add penalty
             loss += raw_dice_loss * self.penalty_weights[pred_cls, label_cls]
         return loss
@@ -119,8 +119,8 @@ class L1LossWithPenalty(nn.Module):
             # calculate raw loss
             raw_l1_loss = torch.abs(predicted[batch] - target[batch]).sum()
             # get class numbers
-            pred_cls = (predicted[batch] == 1).nonzero().item()
-            label_cls = (target[batch] == 1).nonzero().item()
+            pred_cls = torch.argmax(predicted[batch]).item()
+            label_cls = torch.argmax(target[batch]).item()
             # add penalty for specified loss
             loss += raw_l1_loss * self.penalty_weights[pred_cls, label_cls]
 
@@ -159,12 +159,10 @@ class MSELossWithPenalty(nn.Module):
             raw_mse_loss = torch.square(torch.abs(predicted[batch] - target[batch])).mean()
 
             # get predicted and target class numbers
-            pred_cls = (predicted[batch] == 1).nonzero().item()
-            label_cls = (target[batch] == 1).nonzero().item()
+            pred_cls = torch.argmax(predicted[batch]).item()
+            label_cls = torch.argmax(target[batch]).item()
 
             # add penalty for that loss
             loss += raw_mse_loss * self.penalty_weights[pred_cls, label_cls]
 
         return loss
-
-loss = SoftDiceLossWithPenalty()
