@@ -58,7 +58,7 @@ class SoftDiceLossWithPenalty(SoftDiceLoss):
     penalty matrix's corresponding value will be taken into consideration
     Penalty value will be multiplied by Soft Dice Loss of each input's prediction and labels
     """
-    def __init__(self, weight_path="weights.csv"):
+    def __init__(self, weight_path):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
         self.soft_dice_loss = SoftDiceLoss()
@@ -97,7 +97,7 @@ class L1LossWithPenalty(nn.Module):
     penalty matrix's corresponding value will be taken into consideration
     Penalty value will be multiplied by L1 distance of each input's prediction and labels
     """
-    def __init__(self, weight_path="weights.csv"):
+    def __init__(self, weight_path):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
 
@@ -136,7 +136,7 @@ class MSELossWithPenalty(nn.Module):
      Penalty value will be multiplied by L1 distance of each input's prediction and labels
      """
 
-    def __init__(self, weight_path="weights.csv"):
+    def __init__(self, weight_path):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
 
