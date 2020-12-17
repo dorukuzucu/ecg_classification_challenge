@@ -1,23 +1,20 @@
 
 import torch
-import torch.nn.functional as F
-import torch.nn as nn
-from torch.nn import BCEWithLogitsLoss
-
-from src.data.data_loader import ECGParquetDataloader
-from src.model.utils import dict_to_torch
-import numpy as np
-import pandas as pd
+from torch import nn
 
 """
 Method that will be used to load weights as a penalty matrix 
 """
 def load_penalty_csv(path):
+    """
+    This matrix is normally used to score TP, FP, TN, FN of each classes.
+    Since we have this conditions, we will add these as punishment terms to losses
+    """
     w = pd.read_csv(path)
     np_w = w.to_numpy()
-    labels = np_w[:,0]
-    weights = np_w[:,1:]
-    return 1/torch.from_numpy(weights)#, torch.from_numpy(labels)
+    labels = np_w[:, 0]
+    weights = np_w[:, 1:]
+    return 1 / torch.from_numpy(weights)
 
 
 class SoftDiceLoss(nn.Module):
@@ -53,18 +50,54 @@ class SoftDiceLoss(nn.Module):
         return loss.mean()
 
 
-class L1LossWithPenalty(nn.L1Loss):
+class SoftDiceLossWithPenalty(SoftDiceLoss):
+    """
+    SoftDiceLossWithPenalty class takes a matrix path as a loss and calculates a loss based on penalty weights.
+    Weights are decided by physionet and originally used in scoring.
+    We will utilize these weights in our loss function with simple a modification
+    penalty matrix's corresponding value will be taken into consideration
+    Penalty value will be multiplied by Soft Dice Loss of each input's prediction and labels
+    """
+    def __init__(self, weight_path="weights.csv"):
+        super().__init__()
+        self.penalty_weights = load_penalty_csv(weight_path)
+        self.soft_dice_loss = SoftDiceLoss()
+
+    def forward(self, predicted, target):
+        """
+        :param predicted: predictions as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :param target: labels as NxC tensor.
+            N: Number of inputs or batches
+            C: Number of classes
+        :return: Dice Loss with a Penalty:
+            loss = SoftDiceLoss * penalty_term
+        """
+        # check shapes
+        assert predicted.size() == target.size()
+        # calculate loss
+        loss = 0
+        for batch in range(predicted.size(0)):
+            # get raw dice loss
+            raw_dice_loss = self.soft_dice_loss.forward(predicted[batch], target[batch])
+            # get predicted class and target classes
+            pred_cls = (predicted[batch] == 1).nonzero().item()
+            label_cls = (target[batch] == 1).nonzero().item()
+            # add penalty
+            loss += raw_dice_loss * self.penalty_weights[pred_cls, label_cls]
+        return loss
+
+
+class L1LossWithPenalty(nn.Module):
     """
     L1LossWithPenalty class takes a matrix path as a loss and calculates a loss based on penalty weights.
-    Penalty weights are decided by physionet. We will utilize these weights in our loss function
-    Since model can predict more than 1 classes, these cases will be taken into consideration.
-    When there is only 1 predicted class and 1 label:
-        penalty matrix's corresponding value will be taken into consideration
-    Otherwise:
-        maximum value of matrix will be used as penalty
-    Penalty value will be multiplied by L1 Distance of each input's prediction and labels
+    Weights are decided by physionet and originally used in scoring.
+    We will utilize these weights in our loss function with simple a modification
+    penalty matrix's corresponding value will be taken into consideration
+    Penalty value will be multiplied by L1 distance of each input's prediction and labels
     """
-    def __init__(self,weight_path):
+    def __init__(self, weight_path="weights.csv"):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
 
@@ -83,27 +116,27 @@ class L1LossWithPenalty(nn.L1Loss):
         # calculate loss
         loss = 0
         for batch in range(predicted.size(0)):
+            # calculate raw loss
             raw_l1_loss = torch.abs(predicted[batch] - target[batch]).sum()
-            if(predicted[batch].sum()==1 and target[batch].sum == 1):
-                pred_cls = (predicted[batch] == 1).nonzero().item()
-                label_cls = (target[batch] == 1).nonzero().item()
-                loss+=raw_l1_loss * self.penalty_weights[pred_cls,label_cls]
-            else:
-                loss+=raw_l1_loss * self.penalty_weights.max()
+            # get class numbers
+            pred_cls = (predicted[batch] == 1).nonzero().item()
+            label_cls = (target[batch] == 1).nonzero().item()
+            # add penalty for specified loss
+            loss += raw_l1_loss * self.penalty_weights[pred_cls, label_cls]
+
         return loss
 
-class MSELossWithPenalty(nn.MSELoss):
+
+class MSELossWithPenalty(nn.Module):
     """
-        MSELossWithPenalty class takes a matrix path as a loss and calculates a loss based on penalty weights.
-        Penalty weights are decided by physionet. We will utilize these weights in our loss function
-        Since model can predict more than 1 classes, these cases will be taken into consideration.
-        When there is only 1 predicted class and 1 label:
-            penalty matrix's corresponding value will be taken into consideration
-        Otherwise:
-            maximum value of matrix will be used as penalty
-        Penalty value will be multiplied by MSE between each input's prediction and labels
-        """
-    def __init__(self,weight_path):
+     MSELossWithPenalty class takes a matrix path as a loss and calculates a loss based on penalty weights.
+     Weights are decided by physionet and originally used in scoring.
+     We will utilize these weights in our loss function with simple a modification
+     penalty matrix's corresponding value will be taken into consideration
+     Penalty value will be multiplied by L1 distance of each input's prediction and labels
+     """
+
+    def __init__(self, weight_path="weights.csv"):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
 
@@ -122,11 +155,16 @@ class MSELossWithPenalty(nn.MSELoss):
         # calculate loss
         loss = 0
         for batch in range(predicted.size(0)):
+            # calculate raw loss
             raw_mse_loss = torch.square(torch.abs(predicted[batch] - target[batch])).mean()
-            if(predicted[batch].sum()==1 and target[batch].sum == 1):
-                pred_cls = (predicted[batch] == 1).nonzero().item()
-                label_cls = (target[batch] == 1).nonzero().item()
-                loss+=raw_mse_loss * self.penalty_weights[pred_cls,label_cls]
-            else:
-                loss+=raw_mse_loss * self.penalty_weights.max()
+
+            # get predicted and target class numbers
+            pred_cls = (predicted[batch] == 1).nonzero().item()
+            label_cls = (target[batch] == 1).nonzero().item()
+
+            # add penalty for that loss
+            loss += raw_mse_loss * self.penalty_weights[pred_cls, label_cls]
+
         return loss
+
+loss = SoftDiceLossWithPenalty()
