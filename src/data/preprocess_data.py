@@ -40,11 +40,11 @@ def load_challenge_data(header_file):
     recording = np.asarray(x['val'], dtype=np.float64)
     return recording, header
 
+project_path = Path(__file__).parents[2]
+input_directory = project_path / "data/raw"
+output_directory = project_path / "data/processed"
 
-input_directory = "data/raw"
-output_directory = "data/processed"
-
-folders = ["training", "validation", "test"]
+folders = ["train", "validation", "test"]
 
 for folder in folders:
     input_directory_path = os.path.join(input_directory, folder)
