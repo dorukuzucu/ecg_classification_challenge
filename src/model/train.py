@@ -5,7 +5,9 @@ from src.data.data_loader import ECGParquetDataloader
 import torch.nn as nn
 import torch.optim as optim
 import os
+from pathlib import Path
 
+WEIGHT_PATH = os.path.join(Path(__file__).parents[2],"data","raw","weights.csv")
 # TODO set a method for epoch train
 # TODO begin_run, begin_epoch methods
 # TODO save best model
@@ -24,7 +26,9 @@ class TrainManager:
         for run in self.runs:
             # set optimizer and loss function for this run
             self.begin_run(run=run)
-
+            # convert model to GPU if it is enabled
+            if self.is_gpu_enabled(run):
+                self.model.to(run.device)
             # iterate over epochs
             for epoch in range(run.epochs):
                 # get dataset for this epoch to be trained on
@@ -39,7 +43,13 @@ class TrainManager:
                 for batch_data in self.dataset:
                     # we need to preprocess parquet data it order to feed it to network
                     features, labels = dict_to_torch(batch_data, feature_count=14)
-                    predictions = self.model(features)
+                    # move data and labels to GPU if enabled
+                    if self.is_gpu_enabled(run):
+                        features = features.to(run.device)
+                        labels = labels.to(run.device)
+
+                    # get predictions
+                    predictions = self.model.forward(features)
 
                     # calculate loss and update weights for batch
                     loss_out = self.criterion(predictions, labels)
@@ -65,11 +75,13 @@ class TrainManager:
                     val_loss = 0
                     for batch_data in self.dataset:
                         # we need to preprocess parquet data it order to feed it to network
-                        features, labels = dict_to_torch(batch_data, batch_size=run.batch_size, feature_count=14)
-                        predictions = self.model(features.float())
+                        features, labels = dict_to_torch(batch_data, feature_count=14)
+                        if self.is_gpu_enabled(run):
+                            features = features.to(run.device)
+                            labels = labels.to(run.device)
+                        predictions = self.model(features)
                         # calculate loss for batch
-                        criterion = nn.BCEWithLogitsLoss(pos_weight=self.model.loss_weights)
-                        loss_out = criterion(predictions, labels.float())
+                        loss_out = self.criterion(predictions, labels)
                         val_loss += loss_out
                         # add correct and total predictions
                         correct_prediction_count += correct_predictions(predictions, labels)
@@ -85,17 +97,23 @@ class TrainManager:
 
     def set_criterion(self, loss_fn="penalty_dice"):
         if loss_fn == "dice":
-            self.criterion = SoftDiceLoss()
+            self.criterion = SoftDiceLoss(WEIGHT_PATH)
         elif loss_fn == "penalty_l1":
-            self.criterion = L1LossWithPenalty()
+            self.criterion = L1LossWithPenalty(WEIGHT_PATH)
         elif loss_fn == "penalty_mse":
-            self.criterion = MSELossWithPenalty()
+            self.criterion = MSELossWithPenalty(WEIGHT_PATH)
         elif loss_fn == "penalty_dice":
-            self.criterion = SoftDiceLossWithPenalty()
+            self.criterion = SoftDiceLossWithPenalty(WEIGHT_PATH)
 
     def begin_run(self, run):
         self.set_optimizer(run)
         self.set_criterion(run.loss_fn)
+
+    def is_gpu_enabled(self,run):
+        if run.device == 'cuda' and torch.cuda.is_available():
+            return True
+        else:
+            return False
 
 
 dummy_model = TestNet()
@@ -103,16 +121,18 @@ data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learnin
 
 
 dummy_params = {
-    'learning_rate': [0.01],
-    'batch_size': [3],
-    'epochs': [100],
+    'learning_rate': [0.05],
+    'batch_size': [50],
+    'epochs': [250],
     'num_workers': [0],
     'optimizer_type': ["Adam"],
-    'loss_fn': ["penalty_l1"],
-    'epochs_for_val': [4],
-    'weight_decay': [1e-4],
-    'momentum': [0]
+    'loss_fn': ["penalty_mse"],
+    'epochs_for_val': [5],
+    'weight_decay': [0],
+    'momentum': [0],
+    'device':["cuda"]
 }
 
 mngr = TrainManager(model=dummy_model, processed_data_path=data_path, training_config=dummy_params)
 mngr.train()
+

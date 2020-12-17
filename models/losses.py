@@ -42,9 +42,12 @@ class SoftDiceLoss(nn.Module):
         assert predicted.size() == target.size()
 
         # calculate numerator and denominator of dice loss
-        numerator = (predicted * target).sum(1) + self.epsilon
-        denominator = predicted.sum(1) + target.sum(1) + self.epsilon
-
+        if len(predicted.size())>1:
+            numerator = torch.add((predicted * target).sum(1),1e-12)
+            denominator = torch.add((predicted.sum(1) + target.sum(1)), 1e-12)
+        else:
+            numerator = torch.add((predicted * target),1e-12)
+            denominator = torch.add((predicted + target), 1e-12)
         # calculate and return loss
         loss = 1 - 2 * numerator / denominator
         return loss.mean()
@@ -58,7 +61,7 @@ class SoftDiceLossWithPenalty(SoftDiceLoss):
     penalty matrix's corresponding value will be taken into consideration
     Penalty value will be multiplied by Soft Dice Loss of each input's prediction and labels
     """
-    def __init__(self, weight_path="weights.csv"):
+    def __init__(self, weight_path):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
         self.soft_dice_loss = SoftDiceLoss()
@@ -97,7 +100,7 @@ class L1LossWithPenalty(nn.Module):
     penalty matrix's corresponding value will be taken into consideration
     Penalty value will be multiplied by L1 distance of each input's prediction and labels
     """
-    def __init__(self, weight_path="weights.csv"):
+    def __init__(self, weight_path):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
 
@@ -136,7 +139,7 @@ class MSELossWithPenalty(nn.Module):
      Penalty value will be multiplied by L1 distance of each input's prediction and labels
      """
 
-    def __init__(self, weight_path="weights.csv"):
+    def __init__(self, weight_path):
         super().__init__()
         self.penalty_weights = load_penalty_csv(weight_path)
 

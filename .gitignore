@@ -61,3 +61,4 @@ venv.bak/
 .mat
 */raw/*
 !*/raw/dx_mapping_scored.csv
+!*/raw/weights.csv
