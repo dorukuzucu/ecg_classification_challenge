@@ -8,7 +8,7 @@ import pyarrow as pa
 import pyarrow.csv as pcsv
 import pyarrow.parquet as pq
 from scipy import io
-
+import pandas as pd
 from get_12ECG_features import get_12ECG_features
 
 
@@ -16,7 +16,8 @@ from get_12ECG_features import get_12ECG_features
 def get_classes(input_directory, filenames, static=True):
     if static:
         class_path = os.path.join(Path(input_directory).parents[1], "dx_mapping_scored.csv")
-        class_matrix = pcsv.read_csv(class_path).to_pandas()
+        #class_matrix = pcsv.read_csv(class_path).to_pandas()
+        class_matrix = pd.read_csv(class_path)
         classes = class_matrix["SNOMED CT Code"].astype(str)
         return list(set(classes))
     else:
@@ -54,7 +55,7 @@ for folder in folders:
 
     # loop in raw data folders
     for input_folder in glob.glob(f"{input_directory_path}/*"):
-        folder_name = input_folder.split("/")[-1]
+        folder_name = input_folder.split(os.path.sep)[-1]
         print(f"processing {folder_name} data..")
 
         header_files = []

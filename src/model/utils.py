@@ -39,6 +39,6 @@ def correct_predictions(predictions, targets):
     # calculate correct predictions over each batch
     correct = 0
     for batch in range(predictions.size(0)):
-        if torch.equal(predictions[batch], targets[batch]):
+        if torch.equal(torch.argmax(predictions[batch]), torch.argmax(targets[batch])):
             correct += 1
     return correct
