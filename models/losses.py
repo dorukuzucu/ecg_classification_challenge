@@ -42,9 +42,12 @@ class SoftDiceLoss(nn.Module):
         assert predicted.size() == target.size()
 
         # calculate numerator and denominator of dice loss
-        numerator = (predicted * target).sum(1) + self.epsilon
-        denominator = predicted.sum(1) + target.sum(1) + self.epsilon
-
+        if len(predicted.size())>1:
+            numerator = torch.add((predicted * target).sum(1),1e-12)
+            denominator = torch.add((predicted.sum(1) + target.sum(1)), 1e-12)
+        else:
+            numerator = torch.add((predicted * target),1e-12)
+            denominator = torch.add((predicted + target), 1e-12)
         # calculate and return loss
         loss = 1 - 2 * numerator / denominator
         return loss.mean()

@@ -45,11 +45,11 @@ class TrainManager:
                     features, labels = dict_to_torch(batch_data, feature_count=14)
                     # move data and labels to GPU if enabled
                     if self.is_gpu_enabled(run):
-                        features.to(run.device)
-                        labels.to(run.device)
+                        features = features.to(run.device)
+                        labels = labels.to(run.device)
 
                     # get predictions
-                    predictions = self.model(features)
+                    predictions = self.model.forward(features)
 
                     # calculate loss and update weights for batch
                     loss_out = self.criterion(predictions, labels)
@@ -76,9 +76,12 @@ class TrainManager:
                     for batch_data in self.dataset:
                         # we need to preprocess parquet data it order to feed it to network
                         features, labels = dict_to_torch(batch_data, feature_count=14)
-                        predictions = self.model(features.float())
+                        if self.is_gpu_enabled(run):
+                            features = features.to(run.device)
+                            labels = labels.to(run.device)
+                        predictions = self.model(features)
                         # calculate loss for batch
-                        loss_out = self.criterion(predictions, labels.float())
+                        loss_out = self.criterion(predictions, labels)
                         val_loss += loss_out
                         # add correct and total predictions
                         correct_prediction_count += correct_predictions(predictions, labels)
@@ -107,7 +110,7 @@ class TrainManager:
         self.set_criterion(run.loss_fn)
 
     def is_gpu_enabled(self,run):
-        if self.run.device == 'cuda' and torch.cuda.is_available():
+        if run.device == 'cuda' and torch.cuda.is_available():
             return True
         else:
             return False
@@ -118,14 +121,14 @@ data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learnin
 
 
 dummy_params = {
-    'learning_rate': [0.01],
-    'batch_size': [3],
-    'epochs': [100],
+    'learning_rate': [0.05],
+    'batch_size': [50],
+    'epochs': [250],
     'num_workers': [0],
     'optimizer_type': ["Adam"],
-    'loss_fn': ["dice"],
-    'epochs_for_val': [10],
-    'weight_decay': [1e-4],
+    'loss_fn': ["penalty_mse"],
+    'epochs_for_val': [5],
+    'weight_decay': [0],
     'momentum': [0],
     'device':["cuda"]
 }
