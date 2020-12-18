@@ -77,85 +77,75 @@ for folder in folders:
 
         features = list()
         labels = list()
-        arr_list = []
+        label = list()
 
         for i in range(num_files):
             recording = recordings[i]
             header = headers[i]
 
-            tmp = get_12ECG_features(recording, header)
+            tmp, num_leads = get_12ECG_features(recording, header)
             features.append(tmp)
-
+            
+            
             for l in header:
                 if l.startswith('#Dx:'):
-                    labels_act = np.zeros(num_classes+1)
+                    #labels_act = np.zeros(num_classes+1)
+                    label = list()
                     arrs = l.strip().split(' ')
                     for arr in arrs[1].split(','):
                         # if label not in our labels
-                        arr_list.append(arr)
                         if arr.rstrip() not in classes:
-                            labels_act[-1] = 1
+                            #labels_act[-1] = 1
+                            label = -1
+                            continue
                         else:
-                            class_index = classes.index(arr.rstrip()) # Only use first positive index
-                            labels_act[class_index] = 1
-            labels.append(labels_act)
+                            #class_index = classes.index(arr.rstrip()) # Only use first positive index
+                            #labels_act[class_index] = 1
+                            label = arr.rstrip()
+                            break # Only use first positive index
+            #labels.append(labels_act)
+            labels.append(label)
+
 
         # "age", "sex", "mean_RR", "mean_Peaks", "median_RR", "median_Peaks", "std_RR", "std_Peaks", "var_RR", "var_Peaks", "skew_RR", "skew_Peaks", "kurt_RR", "kurt_Peaks"
         features = np.array(features)
         labels = np.array(labels)
 
         # filter labels which not in our labels
-        labels = labels[:, :num_classes]
-        other_class_mask = labels.sum(axis=1) != 0
+        other_class_mask = labels != "-1"
         features = features[other_class_mask]
         labels = labels[other_class_mask]
 
+        feature_list = ["mean_RR", "mean_Peaks", "median_RR", "median_Peaks", "std_RR", "std_Peaks", "var_RR", "var_Peaks", "skew_RR", "skew_Peaks", "kurt_RR", "kurt_Peaks"]
         # features
         # since number of feautes has not been determined we create them statically
         fields_features = [
+            ('label', pa.string()),
             ('age', pa.float32()),
             ('sex', pa.float32()),
-            ('mean_RR', pa.float32()),
-            ('mean_Peaks', pa.float32()),
-            ('median_RR', pa.float32()),
-            ('median_Peaks', pa.float32()),
-            ('std_RR', pa.float32()),
-            ('std_Peaks', pa.float32()),
-            ('var_RR', pa.float32()),
-            ('var_Peaks', pa.float32()),
-            ('skew_RR', pa.float32()),
-            ('skew_Peaks', pa.float32()),
-            ('kurt_RR', pa.float32()),
-            ('kurt_Peaks', pa.float32()),
         ]
-        table_features_arrays = [
+
+        table_features = [
+            pa.array(labels), 
             pa.array(features[:, 0]), 
-            pa.array(features[:, 1]), 
-            pa.array(features[:, 2]), 
-            pa.array(features[:, 3]), 
-            pa.array(features[:, 4]), 
-            pa.array(features[:, 5]), 
-            pa.array(features[:, 6]), 
-            pa.array(features[:, 7]), 
-            pa.array(features[:, 8]), 
-            pa.array(features[:, 9]), 
-            pa.array(features[:, 10]), 
-            pa.array(features[:, 11]), 
-            pa.array(features[:, 12]), 
-            pa.array(features[:, 13]),
+            pa.array(features[:, 1]),
         ]
 
         # labels
         # with loop we get label fields and values dynamically
-        fields_labels = []
-        table_labels_arrays = []
-        for l in range(num_classes):
-            fields_labels += (f'label_{l+1}', pa.int8()),
-            table_labels_arrays += pa.array(labels[:, l]),
+        fields_lead_features = []
+        table_lead_features = []
+
+        ix = 2
+        for l in range(num_leads):
+            for f in feature_list:
+                fields_lead_features += (f'lead{l+1}_{f}', pa.float32()),
+                table_lead_features += pa.array(features[:, ix]),
+                ix += 1
 
         # concat features and labels
-        fields = fields_features + fields_labels
-        table_arrays = table_features_arrays + table_labels_arrays
+        fields = fields_features + fields_lead_features
+        table_arrays = table_features + table_lead_features
 
         # create parquet objects
         schema = pa.schema(fields)
