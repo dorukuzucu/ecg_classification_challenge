@@ -23,6 +23,7 @@ def conv2d_block(in_channels,out_channels,kernel_size=3,stride=1,padding=(1,1),b
               ]
     if bn:
         layers.append(nn.BatchNorm2d(num_features=out_channels))
+
     return nn.Sequential(*layers)
 
 class BottleNeck(nn.Module):

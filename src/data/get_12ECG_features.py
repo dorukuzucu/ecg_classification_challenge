@@ -165,37 +165,39 @@ def get_12ECG_features(data, header_data):
 #        elif iline.startswith('#Dx'):
 #            label = iline.split(': ')[1].split(',')[0]
 
-
+    lead_features = np.array([])
+    for l in range(num_leads):
+    #   We are only using data from lead1
+        peaks,idx = detect_peaks(data[l],sample_Fs,gain_lead[l])
     
-#   We are only using data from lead1
-    peaks,idx = detect_peaks(data[0],sample_Fs,gain_lead[0])
-   
-#   mean
-    mean_RR = np.mean(idx/sample_Fs*1000)
-    mean_Peaks = np.mean(peaks*gain_lead[0])
+    #   mean
+        mean_RR = np.mean(idx/sample_Fs*1000)
+        mean_Peaks = np.mean(peaks*gain_lead[l])
 
-#   median
-    median_RR = np.median(idx/sample_Fs*1000)
-    median_Peaks = np.median(peaks*gain_lead[0])
+    #   median
+        median_RR = np.median(idx/sample_Fs*1000)
+        median_Peaks = np.median(peaks*gain_lead[l])
 
-#   standard deviation
-    std_RR = np.std(idx/sample_Fs*1000)
-    std_Peaks = np.std(peaks*gain_lead[0])
+    #   standard deviation
+        std_RR = np.std(idx/sample_Fs*1000)
+        std_Peaks = np.std(peaks*gain_lead[l])
 
-#   variance
-    var_RR = stats.tvar(idx/sample_Fs*1000)
-    var_Peaks = stats.tvar(peaks*gain_lead[0])
+    #   variance
+        var_RR = stats.tvar(idx/sample_Fs*1000)
+        var_Peaks = stats.tvar(peaks*gain_lead[l])
 
-#   Skewness
-    skew_RR = stats.skew(idx/sample_Fs*1000)
-    skew_Peaks = stats.skew(peaks*gain_lead[0])
+    #   Skewness
+        skew_RR = stats.skew(idx/sample_Fs*1000)
+        skew_Peaks = stats.skew(peaks*gain_lead[l])
 
-#   Kurtosis
-    kurt_RR = stats.kurtosis(idx/sample_Fs*1000)
-    kurt_Peaks = stats.kurtosis(peaks*gain_lead[0])
+    #   Kurtosis
+        kurt_RR = stats.kurtosis(idx/sample_Fs*1000)
+        kurt_Peaks = stats.kurtosis(peaks*gain_lead[l])
 
-    features = np.hstack([age,sex,mean_RR,mean_Peaks,median_RR,median_Peaks,std_RR,std_Peaks,var_RR,var_Peaks,skew_RR,skew_Peaks,kurt_RR,kurt_Peaks])
-  
-    return features
+        lead_features = np.hstack([lead_features, age,sex,mean_RR,mean_Peaks,median_RR,median_Peaks,std_RR,std_Peaks,var_RR,var_Peaks,skew_RR,skew_Peaks,kurt_RR,kurt_Peaks])
+    
+    lead_features
+
+    return lead_features, num_leads
 
 
