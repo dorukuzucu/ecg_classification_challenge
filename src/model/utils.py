@@ -3,6 +3,7 @@ from collections import OrderedDict
 from collections import namedtuple
 import numpy as np
 import torch
+from torch import nn
 
 
 def create_dict_combination(dict):
@@ -23,9 +24,14 @@ def create_dict_combination(dict):
 
 
 def dict_to_torch(dict_inp, feature_count):
-    features = [value.tolist() for value in list(dict_inp.values())[:feature_count]]
-    labels = [value.tolist() for value in list(dict_inp.values())[feature_count:]]
-    return torch.from_numpy(np.array(features).T).float(), torch.from_numpy(np.array(labels).T).float()
+    labels = [value.tolist() for value in list(dict_inp.values())[1:feature_count]]
+    features = [value.tolist() for value in list(dict_inp.values())[:1]]
+    features = np.array(features).T # to set dimensions from feature_size x batch_size to its transpose
+    labels = np.array(labels).T # to set dimensions from feature_size x batch_size to its transpose
+
+    cnn_features = features.reshape(features.shape(0), 1, feature_count, features.shape(1) // feature_count)
+    labels_one_hot = nn.functional.one_hot(torch.from_numpy(labels).to(torch.int64),27)
+    return torch.from_numpy(cnn_features).float(), torch.from_numpy(labels_one_hot).float()
 
 
 def correct_predictions(predictions, targets):

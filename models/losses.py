@@ -14,7 +14,8 @@ def load_penalty_csv(path):
     np_w = w.to_numpy()
     labels = np_w[:, 0]
     weights = np_w[:, 1:]
-    return 1 / torch.from_numpy(weights)
+    penalty =  1 / torch.from_numpy(weights)
+    return penalty / penalty.max()
 
 
 class SoftDiceLoss(nn.Module):
@@ -89,7 +90,8 @@ class SoftDiceLossWithPenalty(SoftDiceLoss):
             label_cls = torch.argmax(target[batch]).item()
             # add penalty
             loss += raw_dice_loss * self.penalty_weights[pred_cls, label_cls]
-        return loss
+        # normalize with batch size
+        return loss/predicted.size(0)
 
 
 class L1LossWithPenalty(nn.Module):
@@ -127,7 +129,7 @@ class L1LossWithPenalty(nn.Module):
             # add penalty for specified loss
             loss += raw_l1_loss * self.penalty_weights[pred_cls, label_cls]
 
-        return loss
+        return loss/predicted.size(0)
 
 
 class MSELossWithPenalty(nn.Module):
@@ -167,5 +169,5 @@ class MSELossWithPenalty(nn.Module):
 
             # add penalty for that loss
             loss += raw_mse_loss * self.penalty_weights[pred_cls, label_cls]
-
-        return loss
+        # normalize loss and return
+        return loss/predicted.size(0)
