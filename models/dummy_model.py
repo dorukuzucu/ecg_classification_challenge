@@ -12,24 +12,25 @@ Main advantages of bottleneck is:
 Bottleneck is essentially, a 2 times 3x3 conv2d blocks replaced by 1x1,3x3,1x1 blocks    
 """
 def conv3x3(in_channels, out_channels):
-    return nn.Conv1d(kernel_size=3,in_channels=in_channels, out_channels=out_channels, stride=1,padding=(1,1))
+    return nn.Conv2d(kernel_size=3,in_channels=in_channels, out_channels=out_channels, stride=1,padding=(1,1))
 
 def conv1x1(in_channels,out_channels):
-    return nn.Conv1d(kernel_size=1, in_channels=in_channels, out_channels=out_channels, stride=1)
+    return nn.Conv2d(kernel_size=1, in_channels=in_channels, out_channels=out_channels, stride=1)
 
-def conv2d_block(in_channels,out_channels,kernel_size=3,stride=1,padding=(1,1)):
-    layers = [nn.Conv1d(kernel_size=kernel_size, in_channels=in_channels,out_channels=out_channels, stride=stride,padding=padding),
-              nn.BatchNorm1d(num_features=out_channels),
+def conv2d_block(in_channels,out_channels,kernel_size=3,stride=1,padding=(1,1),bn=False):
+    layers = [nn.Conv2d(kernel_size=kernel_size, in_channels=in_channels,out_channels=out_channels, stride=stride,padding=padding),
               nn.ReLU()
               ]
+    if bn:
+        layers.append(nn.BatchNorm2d(num_features=out_channels))
     return nn.Sequential(*layers)
 
 class BottleNeck(nn.Module):
 
-    def __init__(self, in_channels, out_channels, width):
+    def __init__(self, num_channels, width):
         # first 1x1 block
         super().__init__()
-        self.conv1x1_1 = conv1x1(in_channels=in_channels,out_channels=width)
+        self.conv1x1_1 = conv1x1(in_channels=num_channels, out_channels=width)
         self.bn1 = nn.BatchNorm2d(num_features=width)
         self.relu1 = nn.ReLU()
 
@@ -39,8 +40,8 @@ class BottleNeck(nn.Module):
         self.relu2 = nn.ReLU()
 
         # second 1x1 block
-        self.conv1x1_2 = conv1x1(in_channels=width, out_channels=out_channels)
-        self.bn3 = nn.BatchNorm2d(num_features=out_channels)
+        self.conv1x1_2 = conv1x1(in_channels=width, out_channels=num_channels)
+        self.bn3 = nn.BatchNorm2d(num_features=num_channels)
         self.relu3 = nn.ReLU()
 
     def forward(self, x):
@@ -67,26 +68,26 @@ class BottleNeck(nn.Module):
 class TestNet(nn.Module):
     def __init__(self):
         super(TestNet, self).__init__()
-        self.fc1 = nn.Linear(in_features=14, out_features=50)
-        self.fc2 = nn.Linear(in_features=50, out_features=100)
-        self.fc3 = nn.Linear(in_features=100, out_features=100)
-        self.fc4 = nn.Linear(in_features=100, out_features=100)
-        self.fc5 = nn.Linear(in_features=100, out_features=55)
-        self.out = nn.Linear(in_features=55, out_features=27)
-        self.relu1 = nn.ReLU()
-        self.relu2 = nn.ReLU()
-        self.relu3 = nn.ReLU()
-        self.s_max = nn.Softmax()
+        self.net = nn.Sequential(
+            conv2d_block(in_channels=1, out_channels=10, kernel_size=3, padding=(1, 1)),
+            conv2d_block(in_channels=10, out_channels=20, kernel_size=3, padding=(1, 1), bn=True),
+            BottleNeck(20, 10),
+            BottleNeck(20, 10),
+            BottleNeck(20, 10),
+            conv2d_block(in_channels=20, out_channels=40, kernel_size=3, padding=(1, 1), bn=True),
+            conv2d_block(in_channels=40, out_channels=80, kernel_size=3, padding=(1, 1), bn=True),
+            BottleNeck(80, 20),
+            nn.MaxPool2d(2, stride=2),
+            nn.Flatten(),
+            nn.Linear(80 * 7 * 6, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 256),
+            nn.ReLU(),
+            nn.Linear(256, 27),
+            nn.ReLU(),
+            nn.Softmax(dim=0)
+        )
 
     def forward(self,x):
-        x = self.fc1(x)
-        x = self.relu1(x)
-        x = self.fc2(x)
-        x = self.relu2(x)
-        x = self.fc3(x)
-        x = self.relu3(x)
-        x = self.fc4(x)
-        x = self.fc5(x)
-        x = self.out(x)
-        x = self.s_max(x)
+        x = self.net(x)
         return x
