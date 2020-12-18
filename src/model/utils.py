@@ -24,7 +24,7 @@ def create_dict_combination(dict):
 
 
 def dict_to_torch(dict_inp, feature_count):
-    labels = [value.tolist() for value in list(dict_inp.values())[1:feature_count]]
+    labels = [value.tolist() for value in list(dict_inp.values())[1:]]
     features = [value.tolist() for value in list(dict_inp.values())[:1]]
     features = np.array(features).T # to set dimensions from feature_size x batch_size to its transpose
     labels = np.array(labels).T # to set dimensions from feature_size x batch_size to its transpose

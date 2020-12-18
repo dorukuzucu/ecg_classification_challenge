@@ -119,7 +119,7 @@ class TrainManager:
 dummy_model = TestNet()
 data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
 
-
+"""
 dummy_params = {
     'learning_rate': [0.05],
     'batch_size': [50],
@@ -135,4 +135,15 @@ dummy_params = {
 
 mngr = TrainManager(model=dummy_model, processed_data_path=data_path, training_config=dummy_params)
 mngr.train()
+"""
+
+data = ECGParquetDataloader(os.path.join(data_path, "validation"))
+data_loader = data.new_loader(num_epochs=1,batch_size=1)
+for data in data_loader:
+    print(data)
+    """
+    features,labels = dict_to_torch(data,feature_count=14)
+    print(features)
+    print(labels)
+    """
 
