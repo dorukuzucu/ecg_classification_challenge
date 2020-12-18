@@ -24,14 +24,14 @@ def create_dict_combination(dict):
 
 
 def dict_to_torch(dict_inp, feature_count):
-    labels = [value.tolist() for value in list(dict_inp.values())[1:]]
-    features = [value.tolist() for value in list(dict_inp.values())[:1]]
+    features = [value.tolist() for value in list(dict_inp.values())[1:]]
+    labels = [value.tolist() for value in list(dict_inp.values())[0]]
     features = np.array(features).T # to set dimensions from feature_size x batch_size to its transpose
     labels = np.array(labels).T # to set dimensions from feature_size x batch_size to its transpose
 
-    cnn_features = features.reshape(features.shape(0), 1, feature_count, features.shape(1) // feature_count)
+    cnn_features = features.reshape((features.shape[0], 1, feature_count, (features.shape[1] // feature_count)))
     labels_one_hot = nn.functional.one_hot(torch.from_numpy(labels).to(torch.int64),27)
-    return torch.from_numpy(cnn_features).float(), torch.from_numpy(labels_one_hot).float()
+    return torch.from_numpy(cnn_features).float(), labels_one_hot.float()
 
 
 def correct_predictions(predictions, targets):

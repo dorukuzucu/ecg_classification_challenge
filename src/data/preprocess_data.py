@@ -112,7 +112,7 @@ for folder in folders:
         feature_list = ["age","sex","mean_RR", "mean_Peaks", "median_RR", "median_Peaks", "std_RR", "std_Peaks", "var_RR", "var_Peaks", "skew_RR", "skew_Peaks", "kurt_RR", "kurt_Peaks"]
         # with loop we get fields and values dynamically
         fields = [
-            ('label', pa.string()),
+            ('label', pa.int64()),
         ]
         table_arrays = [
             pa.array(labels),

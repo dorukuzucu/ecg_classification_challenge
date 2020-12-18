@@ -117,7 +117,7 @@ class ECGNetMini(nn.Module):
             nn.MaxPool2d(2, stride=2),
             nn.Flatten()
         )
-        self.out_net = OutLayer(80*14*12)
+        self.out_net = OutLayer(80*7*6)
 
     def forward(self,x):
         x = self.conv_net(x)

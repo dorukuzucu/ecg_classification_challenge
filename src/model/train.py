@@ -1,6 +1,6 @@
 from src.model.utils import create_dict_combination, dict_to_torch, correct_predictions
 from models.losses import *
-from models.dummy_model import TestNet
+from models.dummy_model import ECGNetMini
 from src.data.data_loader import ECGParquetDataloader
 import torch.nn as nn
 import torch.optim as optim
@@ -116,10 +116,10 @@ class TrainManager:
             return False
 
 
-dummy_model = TestNet()
+dummy_model = ECGNetMini()
 data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
 
-"""
+
 dummy_params = {
     'learning_rate': [0.05],
     'batch_size': [50],
@@ -135,15 +135,4 @@ dummy_params = {
 
 mngr = TrainManager(model=dummy_model, processed_data_path=data_path, training_config=dummy_params)
 mngr.train()
-"""
-
-data = ECGParquetDataloader(os.path.join(data_path, "validation"))
-data_loader = data.new_loader(num_epochs=1,batch_size=1)
-for data in data_loader:
-    print(data)
-    """
-    features,labels = dict_to_torch(data,feature_count=14)
-    print(features)
-    print(labels)
-    """
 
