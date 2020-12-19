@@ -87,6 +87,7 @@ class ECGNet(nn.Module):
             nn.Softmax()
         )
 
+
     def forward(self,x):
         x = self.conv_net(x)
         out = self.out_layers(x)

@@ -147,6 +147,7 @@ class TrainManager:
 
 
 dummy_model = Model_2()
+
 data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
 
 
@@ -164,3 +165,4 @@ dummy_params = {
 
 mngr = TrainManager(model=dummy_model, processed_data_path=data_path, training_config=dummy_params)
 mngr.train()
+
