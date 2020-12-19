@@ -21,9 +21,10 @@ class TrainManager:
         self.dataset = None
         self.optimizer = None
         self.criterion = None
+        self.RESULT_SAVE_PATH = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")
 
     def train(self):
-        for run in self.runs:
+        for run_number,run in enumerate(self.runs):
             # set optimizer and loss function for this run
             self.begin_run(run=run)
             # convert model to GPU if it is enabled
@@ -96,7 +97,7 @@ class TrainManager:
                         total_predictions += run.batch_size
                     print("Validation Epoch:{} Loss:{} Accuracy:{}".format(epoch, epoch_loss, correct_prediction_count/total_predictions*100))
                 # save run results for analyzing later
-                self.results.append([run, losses, accuracies])
+            self.end_run(run_number,run, losses, accuracies)
 
     def set_optimizer(self, run):
         if run.optimizer_type == "Adam":
@@ -121,6 +122,18 @@ class TrainManager:
         self.set_criterion(run.loss_fn)
         self.model.apply(self.__init_weights)
 
+    def end_run(self,idx,run,losses, accuracies):
+        save_path = os.path.join(self.RESULT_SAVE_PATH,str(idx))
+        torch.save(self.model.state_dict(),save_path+"_model")
+        self.__save_results(idx,run,losses, accuracies,save_path)
+
+    def __save_results(self,idx,run,losses, accuracies,path):
+        with open(path+"_results.txt", "w") as file:
+            file.write(str(run)+"\n")
+            file.write(str(losses)+"\n")
+            file.write(str(accuracies)+"\n")
+            file.close()
+
     def __is_gpu_enabled(self, run):
         if run.device == 'cuda' and torch.cuda.is_available():
             return True
@@ -132,6 +145,7 @@ class TrainManager:
             torch.nn.init.xavier_uniform(m.weight)
             m.bias.data.fill_(0.01)
 
+
 dummy_model = Model_2()
 data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
 
@@ -141,7 +155,7 @@ dummy_params = {
     'batch_size': [50],
     'epochs': [50],
     'optimizer_type': ["Adam"],
-    'loss_fn': ["penalty_dice","penalty_ll"],
+    'loss_fn': ["dice","penalty_ll"],
     'epochs_for_val': [10],
     'weight_decay': [1e-2],
     'momentum': [0],
