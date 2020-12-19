@@ -1,6 +1,6 @@
 from src.model.utils import create_dict_combination, dict_to_torch, correct_predictions
 from models.losses import *
-from models.dummy_model import ECGNet, Model_1, Model_2
+from models.ecg_net_models import ECGNet, Model_2, Model_Ann, ArrhythmiaNet, ECGHeartbeat
 from src.data.data_loader import ECGParquetDataloader
 import torch.optim as optim
 import os
@@ -12,16 +12,17 @@ WEIGHT_PATH = os.path.join(Path(__file__).parents[2],"data","raw","weights.csv")
 # TODO save best model
 # TODO calculate&save metrics
 class TrainManager:
-    def __init__(self, model, processed_data_path, training_config):
+    def __init__(self, model, processed_data_path, training_config, run_name):
         self.model = model
         self.val_loader = ECGParquetDataloader(os.path.join(processed_data_path, "validation"))
         self.train_loader = ECGParquetDataloader(os.path.join(processed_data_path, "train"))
+        self.run_name = run_name
         self.runs = create_dict_combination(training_config)
         self.results = []
         self.dataset = None
         self.optimizer = None
         self.criterion = None
-        self.RESULT_SAVE_PATH = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")
+        self.RESULT_SAVE_PATH = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep
 
     def train(self):
         for run_number,run in enumerate(self.runs):
@@ -73,7 +74,7 @@ class TrainManager:
                 accuracies.append(correct_prediction_count/total_predictions)
                 """
                 Validation epoch, every x epoch decided by user, we will validate our model
-                """
+                
                 if epoch % run.epochs_for_val == run.epochs_for_val-1:
                     print("Validating model")
                     self.dataset = self.val_loader.new_loader(num_epochs=1, batch_size=run.batch_size)
@@ -96,7 +97,8 @@ class TrainManager:
                         correct_prediction_count += correct_predictions(predictions, labels)
                         total_predictions += run.batch_size
                     print("Validation Epoch:{} Loss:{} Accuracy:{}".format(epoch, epoch_loss, correct_prediction_count/total_predictions*100))
-                # save run results for analyzing later
+                """
+            # save run results for analyzing later
             self.end_run(run_number,run, losses, accuracies)
 
     def set_optimizer(self, run):
@@ -123,11 +125,11 @@ class TrainManager:
         self.model.apply(self.__init_weights)
 
     def end_run(self,idx,run,losses, accuracies):
-        save_path = os.path.join(self.RESULT_SAVE_PATH,str(idx))
+        save_path = self.RESULT_SAVE_PATH+self.run_name+"_"+str(idx)
         torch.save(self.model.state_dict(),save_path+"_model")
-        self.__save_results(idx,run,losses, accuracies,save_path)
+        self.__save_results(run,losses, accuracies,save_path)
 
-    def __save_results(self,idx,run,losses, accuracies,path):
+    def __save_results(self,run,losses, accuracies,path):
         with open(path+"_results.txt", "w") as file:
             file.write(str(run)+"\n")
             file.write(str(losses)+"\n")
@@ -146,23 +148,27 @@ class TrainManager:
             m.bias.data.fill_(0.01)
 
 
-dummy_model = Model_2()
+
+print(os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep)
+model = ECGHeartbeat()
 
 data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
 
 
 dummy_params = {
-    'learning_rate': [0.01, 0.05],
-    'batch_size': [50],
+    'learning_rate': [0.05],
+    'batch_size': [150],
     'epochs': [50],
     'optimizer_type': ["Adam"],
-    'loss_fn': ["dice","penalty_ll"],
-    'epochs_for_val': [10],
+    'loss_fn': ["penalty_mse"],
+    'epochs_for_val': [20],
     'weight_decay': [1e-2],
     'momentum': [0],
     'device':["cuda"]
 }
 
-mngr = TrainManager(model=dummy_model, processed_data_path=data_path, training_config=dummy_params)
+mngr = TrainManager(model=model, processed_data_path=data_path, training_config=dummy_params, run_name="ECGHeartbeat")
 mngr.train()
 
+
+print(os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep)
