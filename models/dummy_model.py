@@ -18,11 +18,11 @@ def conv1x1(in_channels,out_channels):
     return nn.Conv2d(kernel_size=1, in_channels=in_channels, out_channels=out_channels, stride=1)
 
 def conv2d_block(in_channels,out_channels,kernel_size=3,stride=1,padding=(1,1),bn=False):
-    layers = [nn.Conv2d(kernel_size=kernel_size, in_channels=in_channels,out_channels=out_channels, stride=stride,padding=padding),
-              nn.ReLU()
-              ]
+    layers = []
+    layers.append(nn.Conv2d(kernel_size=kernel_size, in_channels=in_channels,out_channels=out_channels, stride=stride,padding=padding))
     if bn:
         layers.append(nn.BatchNorm2d(num_features=out_channels))
+    layers.append(nn.ReLU())
 
     return nn.Sequential(*layers)
 
@@ -68,82 +68,83 @@ class BottleNeck(nn.Module):
         out = self.relu3(x)
         return out
 
-
-class OutLayer(nn.Module):
-    """
-    This class is used to construct output layers. It takes 5 parameters:
-        input_features: number of features in incoming tensor
-        output_features: required number of classes on output
-        bn_flag: Flag to set batch normalization layer
-        dropout_flag: Flag to set dropout layer
-        dropout_value: possibility for a weight to be zeroed
-    """
-    def __init__(self,input_features,output_features=27,bn_flag=True,dropout_flag=True,dropout_value=0.15):
-        super(OutLayer, self).__init__()
-        layers = []
-        # add required number of layers
-        while (input_features//4)>output_features:
-            layers.append(nn.Linear(input_features,input_features//4))
-            layers.append(nn.ReLU())
-            if bn_flag:
-                layers.append(nn.BatchNorm1d(input_features//4))
-            if dropout_flag:
-                layers.append(nn.Dropout(p=dropout_value))
-            input_features = input_features//4
-
-        # add final layers
-        layers.append(nn.Linear(input_features,output_features))
-        layers.append(nn.Softmax(dim=0))
-        # create network
-        self.net = nn.Sequential(*layers)
-
-    def forward(self,x):
-        out = self.net(x)
-        return out
-
-
-class ECGNetMini(nn.Module):
+class ECGNet(nn.Module):
     def __init__(self):
-        super(ECGNetMini, self).__init__()
+        super(ECGNet, self).__init__()
         self.conv_net = nn.Sequential(
             conv2d_block(in_channels=1, out_channels=10, kernel_size=3, padding=(1, 1)),
             conv2d_block(in_channels=10, out_channels=20, kernel_size=3, padding=(1, 1), bn=True),
             BottleNeck(20, 10),
-            BottleNeck(20, 10),
-            BottleNeck(20, 10),
-            conv2d_block(in_channels=20, out_channels=40, kernel_size=3, padding=(1, 1), bn=True),
-            conv2d_block(in_channels=40, out_channels=80, kernel_size=3, padding=(1, 1), bn=True),
-            BottleNeck(80, 20),
             nn.MaxPool2d(2, stride=2),
             nn.Flatten()
         )
-        self.out_net = OutLayer(80*7*6)
+        self.out_layers = nn.Sequential(
+            nn.Linear(in_features=20*7*6, out_features=128, bias=True),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Linear(in_features=128, out_features=27, bias=True),
+            nn.ReLU(),
+            nn.Softmax()
+        )
 
     def forward(self,x):
         x = self.conv_net(x)
-        out = self.out_net(x)
+        out = self.out_layers(x)
         return out
 
 
-class ResECGNet(nn.Module):
+class Model_1(nn.Module):
     def __init__(self,num_bottle_neck):
         super().__init__()
 
         # create layers for convolutional part
         conv_layers = []
-        conv_layers.append(conv2d_block(in_channels=1, out_channels=10, kernel_size=3, padding=(1, 1)))
-        conv_layers.append(conv2d_block(in_channels=10, out_channels=64, kernel_size=3, padding=(1, 1), bn=True))
-        bottle_necks = [BottleNeck(64, 24) for _ in range(num_bottle_neck)]
+        conv_layers.append(conv2d_block(in_channels=1, out_channels=5, kernel_size=3, padding=(1, 1)))
+        conv_layers.append(conv2d_block(in_channels=5, out_channels=24, kernel_size=3, padding=(1, 1), bn=True))
+        bottle_necks = [BottleNeck(24,12) for _ in range(num_bottle_neck)]
         conv_layers = conv_layers+bottle_necks
         # first part of our net is conv net
         self.conv_net = nn.Sequential(*conv_layers)
         # we need to flatten convolutional output
         self.flat = nn.Flatten()
         # output layer
-        self.out_layers = OutLayer(64*14*12)
+        self.out_layers = nn.Sequential(
+            nn.Linear(in_features=4032, out_features=800, bias=True),
+            nn.ReLU(),
+            nn.BatchNorm1d(800),
+            nn.Linear(in_features=800, out_features=164, bias=True),
+            nn.ReLU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(in_features=164, out_features=27, bias=True)
+        )
 
     def forward(self,x):
         x = self.conv_net(x)
         x = self.flat(x)
         out = self.out_layers(x)
+        return out
+
+class Model_2(nn.Module):
+    def __init__(self):
+        super(Model_2, self).__init__()
+        self.conv_1 = conv2d_block(in_channels=1, out_channels=3, kernel_size=3, padding=(1, 1),bn=True)
+        self.conv_2 = conv2d_block(in_channels=3, out_channels=8, kernel_size=3, padding=(1, 1),bn=True)
+        self.drop_out = nn.Dropout(p=0.1)
+        self.b_neck = BottleNeck(8,4)
+        self.flatten = nn.Flatten()
+        self.fc_1 = nn.Linear(8*14*12,124)
+        self.relu_1 = nn.ReLU()
+        self.fc_2 = nn.Linear(124,27)
+        self.softmax = nn.Softmax()
+
+    def forward(self,x):
+        x = self.conv_1(x)
+        x = self.conv_2(x)
+        x = self.drop_out(x)
+        x = self.b_neck(x)
+        x = self.flatten(x)
+        x = self.fc_1(x)
+        x = self.relu_1(x)
+        x = self.fc_2(x)
+        out = self.softmax(x)
         return out
