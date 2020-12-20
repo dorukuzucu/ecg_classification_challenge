@@ -1,14 +1,36 @@
-from src.model.utils import create_dict_combination, dict_to_torch, correct_predictions
-from models.losses import *
-from models.ecg_net_models import ECGNet, Model_2, Model_Ann, ArrhythmiaNet, ECGHeartbeat
-from src.data.data_loader import ECGParquetDataloader
-import torch.optim as optim
 import os
+import sys
 from pathlib import Path
 
-WEIGHT_PATH = os.path.join(Path(__file__).parents[2],"data","raw","weights.csv")
+# to solve windows linux incompatibility
+FOLDER_PATH = str(Path(__file__).parents[2])
+sys.path.append(FOLDER_PATH)
 
+import torch.nn as nn
+import torch.optim as optim
+from models.ecg_net_models import (ArrhythmiaNet, ECGHeartbeat, ECGNet,
+                                   Model_2, Model_Ann)
+from models.losses import *
+from src.data.data_loader import ECGParquetDataloader
+from src.model.utils import (correct_predictions, create_dict_combination,
+                             dict_to_torch)
 
+WEIGHT_PATH = os.path.join(FOLDER_PATH,"data","raw","weights.csv")
+DATA_PATH = "file:" + os.path.join(FOLDER_PATH,"data","processed")
+
+DUMMY_PARAMS = {
+    'learning_rate': [0.05],
+    'batch_size': [150],
+    'epochs': [50],
+    'optimizer_type': ["Adam"],
+    'loss_fn': ["penalty_mse"],
+    'epochs_for_val': [20],
+    'weight_decay': [1e-2],
+    'momentum': [0],
+    'device':["cuda"]
+}
+# TODO set a method for epoch train
+# TODO begin_run, begin_epoch methods
 # TODO save best model
 class TrainManager:
     def __init__(self, model, processed_data_path, training_config, run_name):
@@ -21,6 +43,8 @@ class TrainManager:
         self.dataset = None
         self.optimizer = None
         self.criterion = None
+        self.best_model = None
+        self.best_loss = 1e4 # a big number
         self.RESULT_SAVE_PATH = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep
 
     def train(self):
@@ -95,6 +119,11 @@ class TrainManager:
                         # add correct and total predictions
                         correct_prediction_count += correct_predictions(predictions, labels)
                         total_predictions += run.batch_size
+                    if epoch_loss < self.best_loss:
+                        self.best_model = model
+                        self.best_loss = epoch_loss
+                    self.metrics_train["loss"] = epoch_loss
+                    self.metrics_train["acc"] = correct_prediction_count/total_predictions*100
                     print("Validation Epoch:{} Loss:{} Accuracy:{}".format(epoch, epoch_loss, correct_prediction_count/total_predictions*100))
                 """
             # save run results for analyzing later
@@ -125,7 +154,7 @@ class TrainManager:
 
     def end_run(self,idx,run,losses, accuracies):
         save_path = self.RESULT_SAVE_PATH+self.run_name+"_"+str(idx)
-        torch.save(self.model.state_dict(),save_path+"_model")
+        torch.save(self.best_model.state_dict(),save_path+"_model")
         self.__save_results(run,losses, accuracies,save_path)
 
     def __save_results(self,run,losses, accuracies,path):
@@ -147,21 +176,6 @@ class TrainManager:
             m.bias.data.fill_(0.01)
 
 
-
-model = ECGNet()
-data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
-
-dummy_params = {
-    'learning_rate': [0.05],
-    'batch_size': [150],
-    'epochs': [50],
-    'optimizer_type': ["Adam"],
-    'loss_fn': ["penalty_mse"],
-    'epochs_for_val': [20],
-    'weight_decay': [1e-2],
-    'momentum': [0],
-    'device':["cuda"]
-}
-
-mngr = TrainManager(model=model, processed_data_path=data_path, training_config=dummy_params, run_name="ECGNet")
+model = ECGHeartbeat()
+mngr = TrainManager(model=model, processed_data_path=DATA_PATH, training_config=DUMMY_PARAMS, run_name="ECGHeartbeat")
 mngr.train()
