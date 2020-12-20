@@ -87,7 +87,7 @@ class TrainManager:
 
                     # add correct and total predictions
                     correct_prediction_count += correct_predictions(predictions, labels)
-                    total_predictions += run.batch_size
+                    total_predictions += features.size(0)
                 print("Epoch:{} Loss:{} Accuracy:{} Run:{}".format(epoch, epoch_loss, correct_prediction_count/total_predictions*100, run))
                 self.metrics_train["loss"].append(epoch_loss)
                 self.metrics_train["acc"].append(correct_prediction_count/total_predictions*100)
@@ -113,7 +113,7 @@ class TrainManager:
                         val_loss += loss_out
                         # add correct and total predictions
                         correct_prediction_count += correct_predictions(predictions, labels)
-                        total_predictions += run.batch_size
+                        total_predictions += features.size(0)
                     if val_loss < self.best_loss:
                         self.best_model = self.model
                         self.best_loss = val_loss

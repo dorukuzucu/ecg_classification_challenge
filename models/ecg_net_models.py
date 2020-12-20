@@ -165,7 +165,6 @@ class ECGNet(nn.Module):
         self.out_layers = nn.Sequential(
             nn.Linear(in_features=20*7*6, out_features=128, bias=True),
             nn.ReLU(),
-            nn.BatchNorm1d(128),
             nn.Linear(in_features=128, out_features=27, bias=True),
             nn.ReLU(),
             nn.Softmax()
