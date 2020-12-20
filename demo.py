@@ -18,7 +18,7 @@ Original file is located at
 #download data
 #! wget https://storage.cloud.google.com/physionet-challenge-2020-12-lead-ecg-public/PhysioNetChallenge2020_Training_CPSC.tar.gz
 
-!pip install -r requirements.txt
+#!pip install -r requirements.txt
 # after venv is done you need to restart the runtime
 
 # Commented out IPython magic to ensure Python compatibility.
