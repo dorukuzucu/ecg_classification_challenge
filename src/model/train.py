@@ -8,8 +8,7 @@ sys.path.append(FOLDER_PATH)
 
 import torch.nn as nn
 import torch.optim as optim
-from models.ecg_net_models import (ArrhythmiaNet, ECGHeartbeat, ECGNet,
-                                   Model_2, Model_Ann)
+from models.ecg_net_models import (ArrhythmiaNet, ECGHeartbeat, ECGNet)
 from models.losses import *
 from src.data.data_loader import ECGParquetDataloader
 from src.model.utils import (correct_predictions, create_dict_combination,
@@ -89,7 +88,7 @@ class TrainManager:
                     # add correct and total predictions
                     correct_prediction_count += correct_predictions(predictions, labels)
                     total_predictions += run.batch_size
-                print("Run:{} Epoch:{} Loss:{} Accuracy:{}".format([run.loss_fn,run.optimizer_type, run.learning_rate,run.weight_decay],epoch, epoch_loss, correct_prediction_count/total_predictions))
+                print("Epoch:{} Loss:{} Accuracy:{} Run:{}".format(epoch, epoch_loss, correct_prediction_count/total_predictions*100, run))
                 self.metrics_train["loss"].append(epoch_loss)
                 self.metrics_train["acc"].append(correct_prediction_count/total_predictions*100)
 
@@ -115,12 +114,12 @@ class TrainManager:
                         # add correct and total predictions
                         correct_prediction_count += correct_predictions(predictions, labels)
                         total_predictions += run.batch_size
-                    if epoch_loss < self.best_loss:
-                        self.best_model = model
-                        self.best_loss = epoch_loss
-                    self.metrics_val["loss"].append(epoch_loss)
+                    if val_loss < self.best_loss:
+                        self.best_model = self.model
+                        self.best_loss = val_loss
+                    self.metrics_val["loss"].append(val_loss)
                     self.metrics_val["acc"].append(correct_prediction_count/total_predictions*100)
-                    print("Validation Epoch:{} Loss:{} Accuracy:{}".format(epoch, epoch_loss, correct_prediction_count/total_predictions*100))
+                    print("Validation Epoch:{} Loss:{} Accuracy:{}".format(epoch, val_loss, correct_prediction_count/total_predictions*100))
 
             # save run results for analyzing later
             self.end_run(run_number,run)
