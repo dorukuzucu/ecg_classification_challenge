@@ -7,10 +7,9 @@ import os
 from pathlib import Path
 
 WEIGHT_PATH = os.path.join(Path(__file__).parents[2],"data","raw","weights.csv")
-# TODO set a method for epoch train
-# TODO begin_run, begin_epoch methods
+
+
 # TODO save best model
-# TODO calculate&save metrics
 class TrainManager:
     def __init__(self, model, processed_data_path, training_config, run_name):
         self.model = model
@@ -149,11 +148,8 @@ class TrainManager:
 
 
 
-print(os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep)
-model = ECGHeartbeat()
-
+model = ECGNet()
 data_path = r'file:C:\Users\ABRA\Desktop\Ders\Yüksek Lisans\BLG561-Deep Learning\deep_learning_interim_project\data\processed'
-
 
 dummy_params = {
     'learning_rate': [0.05],
@@ -167,8 +163,5 @@ dummy_params = {
     'device':["cuda"]
 }
 
-mngr = TrainManager(model=model, processed_data_path=data_path, training_config=dummy_params, run_name="ECGHeartbeat")
+mngr = TrainManager(model=model, processed_data_path=data_path, training_config=dummy_params, run_name="ECGNet")
 mngr.train()
-
-
-print(os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep)

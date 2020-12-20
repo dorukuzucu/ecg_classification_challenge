@@ -154,12 +154,12 @@ class ECGNet(nn.Module):
         super(ECGNet, self).__init__()
         self.conv_net = nn.Sequential(
             conv2d_block(in_channels=1, out_channels=10, kernel_size=3, padding=(1, 1)),
+            nn.Dropout(p=0.1),
             conv2d_block(in_channels=10, out_channels=20, kernel_size=3, padding=(1, 1), bn=True),
+            BottleNeck(20, 10),
+            BottleNeck(20, 10),
+            BottleNeck(20, 10),
             nn.MaxPool2d(2, stride=2),
-            BottleNeck(20, 10),
-            BottleNeck(20, 10),
-            BottleNeck(20, 10),
-
             nn.Flatten()
         )
         self.out_layers = nn.Sequential(
