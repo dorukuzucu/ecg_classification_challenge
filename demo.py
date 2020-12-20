@@ -23,6 +23,8 @@ Original file is located at
 
 # Commented out IPython magic to ensure Python compatibility.
 # %cd deep_learning_interim_project
+import os
+from pathlib import Path
 
 from src.model import train
 
@@ -32,14 +34,14 @@ config = {
     'batch_size': [100], # an integer
     'epochs': [50], # an integer
     'optimizer_type': ["Adam"], # ["Adam", "SGD"]
-    'loss_fn': ["penalty_mse"], # ["ce_loss", "penalty_l1", "penalty_mse"]
+    'loss_fn': ["ce_loss"], # ["ce_loss", "penalty_l1", "penalty_mse"]
     'epochs_for_val': [5], # an integer
     'weight_decay': [1e-2], # a float
     'momentum': [0], # a float
-    'device':["cuda"]
+    'device':["cpu"]
 }
 model = train.ECGNet() # ArrhythmiaNet, ECGHeartbeat, ECGNet, Model_2, Model_Ann
 
-mngr = train.TrainManager(model=model, processed_data_path=train.DATA_PATH, training_config=config, run_name="ECGNet")
+mngr = train.TrainManager(model=model, processed_data_path=train.DATA_PATH, training_config=config, run_name="ECGNet_ce_loss")
 mngr.train()
 
