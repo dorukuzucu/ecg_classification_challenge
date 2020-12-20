@@ -19,14 +19,14 @@ WEIGHT_PATH = os.path.join(FOLDER_PATH,"data","raw","weights.csv")
 DATA_PATH = "file:" + os.path.join(FOLDER_PATH,"data","processed")
 
 DUMMY_PARAMS = {
-    'learning_rate': [0.05],
-    'batch_size': [2],
-    'epochs': [1],
-    'optimizer_type': ["Adam"],
-    'loss_fn': ["penalty_mse"],
-    'epochs_for_val': [1],
-    'weight_decay': [1e-2],
-    'momentum': [0],
+    'learning_rate': [0.05], # a float
+    'batch_size': [100], # an integer
+    'epochs': [50], # an integer
+    'optimizer_type': ["Adam"], # ["Adam", "SGD"]
+    'loss_fn': ["penalty_mse"], # ["ce_loss", "penalty_l1", "penalty_mse"]
+    'epochs_for_val': [5], # an integer
+    'weight_decay': [1e-2], # a float
+    'momentum': [0], # a float
     'device':["cuda"]
 }
 
