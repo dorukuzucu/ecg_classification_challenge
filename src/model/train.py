@@ -29,9 +29,7 @@ DUMMY_PARAMS = {
     'momentum': [0],
     'device':["cuda"]
 }
-# TODO set a method for epoch train
-# TODO begin_run, begin_epoch methods
-# TODO save best model
+
 class TrainManager:
     def __init__(self, model, processed_data_path, training_config, run_name):
         self.model = model
@@ -149,6 +147,10 @@ class TrainManager:
         self.set_optimizer(run)
         self.set_criterion(run.loss_fn)
         self.model.apply(self.__init_weights)
+        self.metrics_train = {"loss": [], "acc": []}
+        self.metrics_val = {"loss": [], "acc": []}
+        self.best_model = None
+        self.best_loss = 1e4 # a big number
 
     def end_run(self,idx,run):
         # save each run with different file name
@@ -174,7 +176,3 @@ class TrainManager:
             torch.nn.init.xavier_uniform(m.weight)
             m.bias.data.fill_(0.01)
 
-
-model = ECGHeartbeat()
-mngr = TrainManager(model=model, processed_data_path=DATA_PATH, training_config=DUMMY_PARAMS, run_name="ECGHeartbeat")
-mngr.train()
