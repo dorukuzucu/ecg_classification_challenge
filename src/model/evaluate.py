@@ -64,7 +64,7 @@ def evaluate_model(model,test_data_path, batch_size):
     dataset = test_loader.new_loader(num_epochs=1,batch_size=batch_size)
 
     all_predictions = torch.zeros(1,27)
-    all_labels = torch.zeros(1, 27)
+    all_labels = torch.zeros(1)
 
     for batch in dataset:
         # we need to preprocess parquet data it order to feed it to network
@@ -98,7 +98,9 @@ def calculate_confusion_matrix(targets, preds):
 def calculate_score(target, preds):
     weights = load_weight_csv(WEIGHT_PATH)
     preds_one_hot = nn.functional.one_hot(torch.from_numpy(preds.argmax(1)).to(torch.int64), 27)
-    conf_mat = calculate_confusion_matrix(targets=target, preds=preds_one_hot.numpy())
+    target_one_hot = nn.functional.one_hot(torch.from_numpy(target).to(torch.int64), 27)
+
+    conf_mat = calculate_confusion_matrix(targets=target_one_hot.numpy(), preds=preds_one_hot.numpy())
     score = conf_mat * weights
     return conf_mat,np.sum(score)
 
@@ -120,25 +122,20 @@ def load_model(model_name,state_dict_path):
     return model
 
 
-def calculate_results(model_name,model_path):
+def calculate_results(model_name,model_path,result_name):
     mdl = load_model(model_name, state_dict_path=model_path)
     preds, target = evaluate_model(model=mdl, test_data_path=TEST_DATASET_PATH, batch_size=TEST_BATCH_SIZE)
     confusion_mat, score = calculate_score(target=target, preds=preds)
-    save_confusion_matrix(confusion_mat, model_name+"_confusion_matrix", SAVE_PATH)
-    with open(SAVE_PATH + model_name+"_score.txt", "w") as file:
+    save_confusion_matrix(confusion_mat, model_name+"_"+result_name+"_confusion_matrix", SAVE_PATH)
+    with open(SAVE_PATH + model_name+_+result_name+"_score.txt", "w") as file:
         file.write(str(score) + "\n")
         file.write(str(confusion_mat)+"\n")
         file.close()
     print("Results are save to:{}".format(SAVE_PATH))
 
 
-ecg_net_dict_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ECGNet_0_model"
-arrhhytmia_net_dict_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ArrhythmiaNet_0_model"
-ecg_heartbeat_net_dict_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ECGHeartbeat_0_model"
-ann_net_dick_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ANN_Trial0_model"
+ecg_ce_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ECGNet_ce_loss_0_model"
+ecg_mse_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ECGNet_mse_0_model"
 
-
-calculate_results(model_name="ecg_net",model_path=ecg_net_dict_path)
-calculate_results(model_name="arrhythmia_net",model_path=arrhhytmia_net_dict_path)
-calculate_results(model_name="ecg_heartbeat_net",model_path=ecg_heartbeat_net_dict_path)
-calculate_results(model_name="ann_net",model_path=ann_net_dick_path)
+calculate_results(model_name="ecg_net",model_path=ecg_ce_path,result_name="mse_loss")
+calculate_results(model_name="ecg_net",model_path=ecg_mse_path,result_name="ce_loss")
