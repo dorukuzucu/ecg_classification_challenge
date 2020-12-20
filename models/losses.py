@@ -111,9 +111,8 @@ class L1LossWithPenalty(nn.Module):
         :param predicted: predictions as NxC tensor.
             N: Number of inputs or batches
             C: Number of classes
-        :param target: labels as NxC tensor.
+        :param target: labels as N sized tensor.
             N: Number of inputs or batches
-            C: Number of classes
         :return: L1 loss penalized depending on class predictions
         """
         # check shapes
@@ -150,9 +149,8 @@ class MSELossWithPenalty(nn.Module):
         :param predicted: predictions as NxC tensor.
             N: Number of inputs or batches
             C: Number of classes
-        :param target: labels as NxC tensor.
+        :param target: labels as N tensor.
             N: Number of inputs or batches
-            C: Number of classes
         :return: MSE Loss penalized depending on class predictions
         """
         # calculate loss

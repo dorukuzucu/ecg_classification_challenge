@@ -37,13 +37,13 @@ def dict_to_torch(dict_inp, feature_count):
 def correct_predictions(predictions, targets):
     """
     :param predictions: input of predicted values. size should be WxC
-    :param targets: input of target values. size should be WxC
+    :param targets: input of target values. size should be W
     :return: total number pf correct predictions
     """
     # calculate correct predictions over each batch
     correct = 0
     for batch in range(predictions.size(0)):
-        if torch.equal(torch.argmax(predictions[batch]), torch.argmax(targets[batch])):
+        if torch.argmax(predictions[batch]).item() == targets[batch].item():
             correct += 1
     return correct
 

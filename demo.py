@@ -38,8 +38,8 @@ config = {
     'momentum': [0], # a float
     'device':["cuda"]
 }
-model = train.ECGHeartbeat() # ArrhythmiaNet, ECGHeartbeat, ECGNet, Model_2, Model_Ann
+model = train.ECGNet() # ArrhythmiaNet, ECGHeartbeat, ECGNet, Model_2, Model_Ann
 
-mngr = train.TrainManager(model=model, processed_data_path=train.DATA_PATH, training_config=config, run_name="ECGHeartbeat")
+mngr = train.TrainManager(model=model, processed_data_path=train.DATA_PATH, training_config=config, run_name="ECGNet")
 mngr.train()
 
