@@ -140,6 +140,8 @@ class TrainManager:
             self.criterion = MSELossWithPenalty(WEIGHT_PATH)
         elif loss_fn == "penalty_dice":
             self.criterion = SoftDiceLossWithPenalty(WEIGHT_PATH)
+        elif loss_fn == "ce_loss":
+            self.criterion = nn.CrossEntropyLoss()
 
     def begin_run(self, run):
         print("Starting new run")
