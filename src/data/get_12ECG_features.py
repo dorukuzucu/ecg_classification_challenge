@@ -167,7 +167,7 @@ def get_12ECG_features(data, header_data):
 
     lead_features = np.array([])
     for l in range(num_leads):
-    #   We are only using data from lead1
+    #   We are using data from all leads
         peaks,idx = detect_peaks(data[l],sample_Fs,gain_lead[l])
     
     #   mean
