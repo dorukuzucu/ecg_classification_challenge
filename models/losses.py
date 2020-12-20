@@ -155,17 +155,16 @@ class MSELossWithPenalty(nn.Module):
             C: Number of classes
         :return: MSE Loss penalized depending on class predictions
         """
-        # check shapes
-        assert predicted.size() == target.size()
         # calculate loss
         loss = 0
+        target_one_hot = nn.functional.one_hot(target.to(torch.int64), 27)
         for batch in range(predicted.size(0)):
             # calculate raw loss
-            raw_mse_loss = torch.square(torch.abs(predicted[batch] - target[batch])).mean()
+            raw_mse_loss = torch.square(torch.abs(predicted[batch] - target_one_hot[batch])).mean()
 
             # get predicted and target class numbers
             pred_cls = torch.argmax(predicted[batch]).item()
-            label_cls = torch.argmax(target[batch]).item()
+            label_cls = torch.argmax(target_one_hot[batch]).item()
 
             # add penalty for that loss
             loss += raw_mse_loss * self.penalty_weights[pred_cls, label_cls]
