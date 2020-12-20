@@ -20,11 +20,11 @@ DATA_PATH = "file:" + os.path.join(FOLDER_PATH,"data","processed")
 
 DUMMY_PARAMS = {
     'learning_rate': [0.05],
-    'batch_size': [150],
-    'epochs': [50],
+    'batch_size': [2],
+    'epochs': [1],
     'optimizer_type': ["Adam"],
     'loss_fn': ["penalty_mse"],
-    'epochs_for_val': [20],
+    'epochs_for_val': [1],
     'weight_decay': [1e-2],
     'momentum': [0],
     'device':["cuda"]
@@ -40,6 +40,8 @@ class TrainManager:
         self.run_name = run_name
         self.runs = create_dict_combination(training_config)
         self.results = []
+        self.metrics_train = {"loss": [], "acc": []}
+        self.metrics_val = {"loss": [], "acc": []}
         self.dataset = None
         self.optimizer = None
         self.criterion = None
@@ -54,9 +56,6 @@ class TrainManager:
             # convert model to GPU if it is enabled
             if self.__is_gpu_enabled(run):
                 self.model.to(run.device)
-            # accuracies and losses to be saved
-            losses = []
-            accuracies = []
             # iterate over epochs
             for epoch in range(run.epochs):
                 """
@@ -93,11 +92,10 @@ class TrainManager:
                     correct_prediction_count += correct_predictions(predictions, labels)
                     total_predictions += run.batch_size
                 print("Run:{} Epoch:{} Loss:{} Accuracy:{}".format([run.loss_fn,run.optimizer_type, run.learning_rate,run.weight_decay],epoch, epoch_loss, correct_prediction_count/total_predictions))
-                losses.append(epoch_loss)
-                accuracies.append(correct_prediction_count/total_predictions)
-                """
-                Validation epoch, every x epoch decided by user, we will validate our model
-                
+                self.metrics_train["loss"].append(epoch_loss)
+                self.metrics_train["acc"].append(correct_prediction_count/total_predictions*100)
+
+                #Validation epoch, every x epoch decided by user, we will validate our model
                 if epoch % run.epochs_for_val == run.epochs_for_val-1:
                     print("Validating model")
                     self.dataset = self.val_loader.new_loader(num_epochs=1, batch_size=run.batch_size)
@@ -122,12 +120,12 @@ class TrainManager:
                     if epoch_loss < self.best_loss:
                         self.best_model = model
                         self.best_loss = epoch_loss
-                    self.metrics_train["loss"] = epoch_loss
-                    self.metrics_train["acc"] = correct_prediction_count/total_predictions*100
+                    self.metrics_val["loss"].append(epoch_loss)
+                    self.metrics_val["acc"].append(correct_prediction_count/total_predictions*100)
                     print("Validation Epoch:{} Loss:{} Accuracy:{}".format(epoch, epoch_loss, correct_prediction_count/total_predictions*100))
-                """
+
             # save run results for analyzing later
-            self.end_run(run_number,run, losses, accuracies)
+            self.end_run(run_number,run)
 
     def set_optimizer(self, run):
         if run.optimizer_type == "Adam":
@@ -152,16 +150,17 @@ class TrainManager:
         self.set_criterion(run.loss_fn)
         self.model.apply(self.__init_weights)
 
-    def end_run(self,idx,run,losses, accuracies):
+    def end_run(self,idx,run):
+        # save each run with different file name
         save_path = self.RESULT_SAVE_PATH+self.run_name+"_"+str(idx)
         torch.save(self.best_model.state_dict(),save_path+"_model")
-        self.__save_results(run,losses, accuracies,save_path)
+        self.__save_results(run,save_path)
 
-    def __save_results(self,run,losses, accuracies,path):
+    def __save_results(self,run,path):
         with open(path+"_results.txt", "w") as file:
             file.write(str(run)+"\n")
-            file.write(str(losses)+"\n")
-            file.write(str(accuracies)+"\n")
+            file.write(str(self.metrics_train)+"\n")
+            file.write(str(self.metrics_val)+"\n")
             file.close()
 
     def __is_gpu_enabled(self, run):
