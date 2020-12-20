@@ -1,7 +1,9 @@
+from collections import OrderedDict, namedtuple
 from itertools import product
-from collections import OrderedDict
-from collections import namedtuple
+
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import torch
 from torch import nn
 
@@ -48,3 +50,21 @@ def correct_predictions(predictions, targets):
         if torch.equal(torch.argmax(predictions[batch]), torch.argmax(targets[batch])):
             correct += 1
     return correct
+
+
+def plot_metrics(result_path):
+    with open(result_path, "r") as file:
+        lines = file.readlines()
+        train = pd.DataFrame(eval(lines[1]))
+        val = pd.DataFrame(eval(lines[2]))
+
+    val_losses = []
+    plt.rcParams['figure.figsize'] = (16, 5)
+    val_interval = int(len(train) / len(val))
+    for i in range(len(val)):
+        val_losses += [val.loc[i, "loss"]] * int(val_interval)
+
+    plt.plot(train["loss"], label="train")
+    plt.plot(val_losses, label="validation")
+    plt.title('loss curve')
+    plt.show()
