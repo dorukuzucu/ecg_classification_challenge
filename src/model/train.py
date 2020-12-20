@@ -165,4 +165,3 @@ dummy_params = {
 
 mngr = TrainManager(model=model, processed_data_path=data_path, training_config=dummy_params, run_name="ECGNet")
 mngr.train()
-
