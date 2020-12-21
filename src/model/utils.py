@@ -50,40 +50,59 @@ def correct_predictions(predictions, targets):
     return correct
 
 
-def plot_metrics(result_path):
-    with open(result_path, "r") as file:
+def plot_metrics(result_path_1, result_path_2):
+    with open(result_path_1, "r") as file:
         lines = file.readlines()
-        train = pd.DataFrame(eval(lines[1]))
-        val = pd.DataFrame(eval(lines[2]))
+        train_1 = pd.DataFrame(eval(lines[1]))
+        val_1 = pd.DataFrame(eval(lines[2]))
+    
+    with open(result_path_2, "r") as file:
+        lines = file.readlines()
+        train_2 = pd.DataFrame(eval(lines[1]))
+        val_2 = pd.DataFrame(eval(lines[2]))
 
-    val_losses, val_acc = [], []
-    val_interval = int(len(train) / len(val))
-    for i in range(len(val)):
-        val_losses += [val.loc[i, "loss"]] * int(val_interval)
-        val_acc += [val.loc[i, "acc"]] * int(val_interval)
+    val_losses_1, val_acc_1 = [], []
+    val_losses_2, val_acc_2 = [], []
+    val_interval = int(len(train_1) / len(val_1))
+    for i in range(len(val_1)):
+        val_losses_1 += [val_1.loc[i, "loss"]] * int(val_interval)
+        val_acc_1 += [val_1.loc[i, "acc"]] * int(val_interval)
+        val_losses_2 += [val_2.loc[i, "loss"]] * int(val_interval)
+        val_acc_2 += [val_2.loc[i, "acc"]] * int(val_interval)
 
     # create output folder
-    Path(os.path.splitext(result_path)[0]).mkdir(exist_ok=True)
+    result_1_name = os.path.splitext(result_path_1)[0]
+    result_2_name = os.path.splitext(result_path_2)[0]
+    Path(result_1_name).mkdir(exist_ok=True)
     # plot train metrics
     # loss
-    plt.plot(train["loss"], label="train")
+    plt.plot(train_1["loss"], label=result_1_name)
+    plt.plot(train_2["loss"], label=result_2_name)
     plt.title('train loss curve')
-    plt.savefig(f"{os.path.splitext(result_path)[0]}/train_loss.png")
+    plt.savefig(f"{result_1_name}/train_loss.png")
     plt.close()
     # accuracy
-    plt.plot(train["acc"], label="train")
+    plt.plot(train_1["acc"], label=result_1_name)
+    plt.plot(train_2["acc"], label=result_2_name)
     plt.title('train accuracy curve')
-    plt.savefig(f"{os.path.splitext(result_path)[0]}/train_accuracy.png")
+    plt.savefig(f"{result_1_name}/train_accuracy.png")
     plt.close()
 
     # plot validation metrics
     # loss
-    plt.plot(val_losses, label="validation")
+    plt.plot(val_losses_1, label=result_1_name)
+    plt.plot(val_losses_2, label=result_2_name)
     plt.title('validation loss curve')
-    plt.savefig(f"{os.path.splitext(result_path)[0]}/val_loss.png")
+    plt.savefig(f"{result_1_name}/val_loss.png")
     plt.close()
     # accuracy
-    plt.plot(val_acc, label="validation")
+    plt.plot(val_acc_1, label=result_1_name)
+    plt.plot(val_acc_2, label=result_2_name)
     plt.title('validation accuracy curve')
-    plt.savefig(f"{os.path.splitext(result_path)[0]}/val_accuracy.png")
+    plt.savefig(f"{result_1_name}/val_accuracy.png")
     plt.close()
+
+
+result_path_1 = os.path.join("results", "ecg_net_results", "Ecg_heratbeat_2_cont_0_results.txt")
+result_path_2 = os.path.join("results", "ecg_net_results", "ECGNet_mse_0_results.txt")
+plot_metrics(result_path_1, result_path_2)
