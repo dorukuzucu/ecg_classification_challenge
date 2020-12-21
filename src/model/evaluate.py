@@ -127,7 +127,7 @@ def calculate_results(model_name,model_path,result_name):
     preds, target = evaluate_model(model=mdl, test_data_path=TEST_DATASET_PATH, batch_size=TEST_BATCH_SIZE)
     confusion_mat, score = calculate_score(target=target, preds=preds)
     save_confusion_matrix(confusion_mat, model_name+"_"+result_name+"_confusion_matrix", SAVE_PATH)
-    with open(SAVE_PATH + model_name+_+result_name+"_score.txt", "w") as file:
+    with open(SAVE_PATH + model_name+"_"+result_name+"_score.txt", "w") as file:
         file.write(str(score) + "\n")
         file.write(str(confusion_mat)+"\n")
         file.close()

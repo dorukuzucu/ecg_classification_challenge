@@ -77,7 +77,7 @@ class TrainManager:
                         labels = labels.to(run.device)
 
                     # get predictions
-                    predictions = self.model.forward(features)
+                    predictions = self.model(features)
                     # calculate loss and update weights for batch
                     loss_out = self.criterion(predictions, labels)
                     self.optimizer.zero_grad()
@@ -115,7 +115,8 @@ class TrainManager:
                         correct_prediction_count += correct_predictions(predictions, labels)
                         total_predictions += features.size(0)
                     if val_loss < self.best_loss:
-                        self.best_model = self.model
+                        save_path = self.RESULT_SAVE_PATH + self.run_name + "_" + str(run_number)
+                        torch.save(self.model.state_dict(), save_path + "_model")
                         self.best_loss = val_loss
                     self.metrics_val["loss"].append(val_loss)
                     self.metrics_val["acc"].append(correct_prediction_count/total_predictions*100)
@@ -150,13 +151,11 @@ class TrainManager:
         self.model.apply(self.__init_weights)
         self.metrics_train = {"loss": [], "acc": []}
         self.metrics_val = {"loss": [], "acc": []}
-        self.best_model = None
         self.best_loss = 1e4 # a big number
 
     def end_run(self,idx,run):
         # save each run with different file name
         save_path = self.RESULT_SAVE_PATH+self.run_name+"_"+str(idx)
-        torch.save(self.best_model.state_dict(),save_path+"_model")
         self.__save_results(run,save_path)
 
     def __save_results(self,run,path):
