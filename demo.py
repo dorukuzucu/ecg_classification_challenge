@@ -34,14 +34,14 @@ config = {
     'batch_size': [100], # an integer
     'epochs': [50], # an integer
     'optimizer_type': ["Adam"], # ["Adam", "SGD"]
-    'loss_fn': ["ce_loss"], # ["ce_loss", "penalty_l1", "penalty_mse"]
+    'loss_fn': ["ce_loss","penalty_mse"], # ["ce_loss", "penalty_l1", "penalty_mse"]
     'epochs_for_val': [5], # an integer
     'weight_decay': [1e-2], # a float
     'momentum': [0], # a float
     'device':["cpu"]
 }
-model = train.ECGNet() # ArrhythmiaNet, ECGHeartbeat, ECGNet, Model_2, Model_Ann
+model = train.ArrhythmiaNet() # ArrhythmiaNet, ECGHeartbeat, ECGNet, Model_2, Model_Ann
 
-mngr = train.TrainManager(model=model, processed_data_path=train.DATA_PATH, training_config=config, run_name="ECGNet_ce_loss")
+mngr = train.TrainManager(model=model, processed_data_path=train.DATA_PATH, training_config=config, run_name="Arrhythmia_net")
 mngr.train()
 
