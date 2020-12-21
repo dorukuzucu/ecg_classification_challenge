@@ -110,7 +110,7 @@ class TrainManager:
                         predictions = self.model(features)
                         # calculate loss for batch
                         loss_out = self.criterion(predictions, labels)
-                        val_loss += loss_out
+                        val_loss += loss_out.item()
                         # add correct and total predictions
                         correct_prediction_count += correct_predictions(predictions, labels)
                         total_predictions += features.size(0)

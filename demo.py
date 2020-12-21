@@ -45,6 +45,7 @@ config = {
     'device':["cpu"]
 }
 
+
 model = ECGHeartbeat() # ArrhythmiaNet, ECGHeartbeat, ECGNet, Model_2, Model_Ann
 mngr = train.TrainManager(model=model, processed_data_path=train.DATA_PATH, training_config=config, run_name="ECGHeartbeat")
 mngr.train()
