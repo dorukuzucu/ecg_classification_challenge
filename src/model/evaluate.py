@@ -133,9 +133,12 @@ def calculate_results(model_name,model_path,result_name):
         file.close()
     print("Results are save to:{}".format(SAVE_PATH))
 
-
+"""
 ecg_ce_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ECGNet_ce_loss_0_model"
 ecg_mse_path = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"ECGNet_mse_0_model"
+ecg_heartbeat = os.path.join(Path(__file__).parents[2],"results","ecg_net_results")+os.path.sep+"Ecg_heratbeat_2_cont_0_model"
 
 calculate_results(model_name="ecg_net",model_path=ecg_ce_path,result_name="mse_loss")
 calculate_results(model_name="ecg_net",model_path=ecg_mse_path,result_name="ce_loss")
+calculate_results(model_name="ecg_heartbeat_net",model_path=ecg_heartbeat,result_name="ce_loss")
+"""

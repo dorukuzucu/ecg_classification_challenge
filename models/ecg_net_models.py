@@ -139,7 +139,6 @@ class ArrhythmiaNet(nn.Module):
             nn.Flatten(),
             nn.Linear(in_features=256*14*12,out_features=2048),
             nn.ELU(),
-            nn.BatchNorm1d(2048),
             nn.Dropout(p=0.5),
             nn.Linear(in_features=2048,out_features=27),
             nn.Softmax()
