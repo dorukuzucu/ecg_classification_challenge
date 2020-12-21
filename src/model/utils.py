@@ -1,5 +1,7 @@
+import os
 from collections import OrderedDict, namedtuple
 from itertools import product
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -54,13 +56,34 @@ def plot_metrics(result_path):
         train = pd.DataFrame(eval(lines[1]))
         val = pd.DataFrame(eval(lines[2]))
 
-    val_losses = []
-    plt.rcParams['figure.figsize'] = (16, 5)
+    val_losses, val_acc = [], []
     val_interval = int(len(train) / len(val))
     for i in range(len(val)):
         val_losses += [val.loc[i, "loss"]] * int(val_interval)
+        val_acc += [val.loc[i, "acc"]] * int(val_interval)
 
+    # create output folder
+    Path(os.path.splitext(result_path)[0]).mkdir(exist_ok=True)
+    # plot train metrics
+    # loss
     plt.plot(train["loss"], label="train")
+    plt.title('train loss curve')
+    plt.savefig(f"{os.path.splitext(result_path)[0]}/train_loss.png")
+    plt.close()
+    # accuracy
+    plt.plot(train["acc"], label="train")
+    plt.title('train accuracy curve')
+    plt.savefig(f"{os.path.splitext(result_path)[0]}/train_accuracy.png")
+    plt.close()
+
+    # plot validation metrics
+    # loss
     plt.plot(val_losses, label="validation")
-    plt.title('loss curve')
-    plt.show()
+    plt.title('validation loss curve')
+    plt.savefig(f"{os.path.splitext(result_path)[0]}/val_loss.png")
+    plt.close()
+    # accuracy
+    plt.plot(val_acc, label="validation")
+    plt.title('validation accuracy curve')
+    plt.savefig(f"{os.path.splitext(result_path)[0]}/val_accuracy.png")
+    plt.close()
