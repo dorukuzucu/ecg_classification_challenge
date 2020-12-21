@@ -140,5 +140,5 @@ ecg_heartbeat = os.path.join(Path(__file__).parents[2],"results","ecg_net_result
 
 calculate_results(model_name="ecg_net",model_path=ecg_ce_path,result_name="mse_loss")
 calculate_results(model_name="ecg_net",model_path=ecg_mse_path,result_name="ce_loss")
-calculate_results(model_name="ecg_heartbeat_net",model_path=ecg_heartbeat,result_name="ce_loss")
+calculate_results(model_name="ecg_heartbeat_net",model_path=ecg_heartbeat,result_name="mse_loss")
 """
